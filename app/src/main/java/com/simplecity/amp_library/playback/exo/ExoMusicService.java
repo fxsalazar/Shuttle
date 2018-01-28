@@ -20,7 +20,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -37,17 +36,14 @@ import android.util.Log;
 
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
-import com.google.android.gms.cast.framework.MediaNotificationManager;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.playback.MusicService;
 import com.simplecity.amp_library.ui.activities.ShortcutTrampolineActivity;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -135,7 +131,7 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
     private Bundle mSessionExtras;
     private final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
     private MediaRouter mMediaRouter;
-//    private PackageValidator mPackageValidator;
+    //    private PackageValidator mPackageValidator;
     private SessionManager mCastSessionManager;
     private SessionManagerListener<CastSession> mCastSessionManagerListener;
 
@@ -220,12 +216,12 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
         int playServicesAvailable =
                 GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
 
-        if (!TvHelper.isTvUiMode(this) && playServicesAvailable == ConnectionResult.SUCCESS) {
-            mCastSessionManager = CastContext.getSharedInstance(this).getSessionManager();
-            mCastSessionManagerListener = new CastSessionManagerListener();
-            mCastSessionManager.addSessionManagerListener(mCastSessionManagerListener,
-                    CastSession.class);
-        }
+//        if (!TvHelper.isTvUiMode(this) && playServicesAvailable == ConnectionResult.SUCCESS) {
+//            mCastSessionManager = CastContext.getSharedInstance(this).getSessionManager();
+//            mCastSessionManagerListener = new CastSessionManagerListener();
+//            mCastSessionManager.addSessionManagerListener(mCastSessionManagerListener,
+//                    CastSession.class);
+//        }
 
         mMediaRouter = MediaRouter.getInstance(getApplicationContext());
 
@@ -295,56 +291,57 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
     @Override
     public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid,
                                  Bundle rootHints) {
-        Log.d(TAG, "OnGetRoot: clientPackageName=" + clientPackageName,
-                "; clientUid=" + clientUid + " ; rootHints=", rootHints);
-        // To ensure you are not allowing any arbitrary app to browse your app's contents, you
-        // need to check the origin:
-        if (!mPackageValidator.isCallerAllowed(this, clientPackageName, clientUid)) {
-            // If the request comes from an untrusted package, return an empty browser root.
-            // If you return null, then the media browser will not be able to connect and
-            // no further calls will be made to other media browsing methods.
-            Log.i(TAG, "OnGetRoot: Browsing NOT ALLOWED for unknown caller. "
-                    + "Returning empty browser root so all apps can use MediaController."
-                    + clientPackageName);
-            return new MediaBrowserServiceCompat.BrowserRoot(MEDIA_ID_EMPTY_ROOT, null);
-        }
-        //noinspection StatementWithEmptyBody
-        if (CarHelper.isValidCarPackage(clientPackageName)) {
-            // Optional: if your app needs to adapt the music library to show a different subset
-            // when connected to the car, this is where you should handle it.
-            // If you want to adapt other runtime behaviors, like tweak ads or change some behavior
-            // that should be different on cars, you should instead use the boolean flag
-            // set by the BroadcastReceiver mCarConnectionReceiver (mIsConnectedToCar).
-        }
-        //noinspection StatementWithEmptyBody
-        if (WearHelper.isValidWearCompanionPackage(clientPackageName)) {
-            // Optional: if your app needs to adapt the music library for when browsing from a
-            // Wear device, you should return a different MEDIA ROOT here, and then,
-            // on onLoadChildren, handle it accordingly.
-        }
-
-        return new BrowserRoot(MEDIA_ID_ROOT, null);
+//        Log.d(TAG, "OnGetRoot: clientPackageName=" + clientPackageName +
+//                "; clientUid=" + clientUid + " ; rootHints=" + rootHints);
+//        // To ensure you are not allowing any arbitrary app to browse your app's contents, you
+//        // need to check the origin:
+//        if (!mPackageValidator.isCallerAllowed(this, clientPackageName, clientUid)) {
+//            // If the request comes from an untrusted package, return an empty browser root.
+//            // If you return null, then the media browser will not be able to connect and
+//            // no further calls will be made to other media browsing methods.
+//            Log.i(TAG, "OnGetRoot: Browsing NOT ALLOWED for unknown caller. "
+//                    + "Returning empty browser root so all apps can use MediaController."
+//                    + clientPackageName);
+//            return new MediaBrowserServiceCompat.BrowserRoot(MEDIA_ID_EMPTY_ROOT, null);
+//        }
+//        //noinspection StatementWithEmptyBody
+//        if (CarHelper.isValidCarPackage(clientPackageName)) {
+//            // Optional: if your app needs to adapt the music library to show a different subset
+//            // when connected to the car, this is where you should handle it.
+//            // If you want to adapt other runtime behaviors, like tweak ads or change some behavior
+//            // that should be different on cars, you should instead use the boolean flag
+//            // set by the BroadcastReceiver mCarConnectionReceiver (mIsConnectedToCar).
+//        }
+//        //noinspection StatementWithEmptyBody
+//        if (WearHelper.isValidWearCompanionPackage(clientPackageName)) {
+//            // Optional: if your app needs to adapt the music library for when browsing from a
+//            // Wear device, you should return a different MEDIA ROOT here, and then,
+//            // on onLoadChildren, handle it accordingly.
+//        }
+//
+//        return new BrowserRoot(MEDIA_ID_ROOT, null);
+        return null;
     }
 
     @Override
     public void onLoadChildren(@NonNull final String parentMediaId,
                                @NonNull final Result<List<MediaItem>> result) {
-        Log.d(TAG, "OnLoadChildren: parentMediaId=", parentMediaId);
-        if (MEDIA_ID_EMPTY_ROOT.equals(parentMediaId)) {
-            result.sendResult(new ArrayList<MediaItem>());
-        } else if (mMusicProvider.isInitialized()) {
-            // if music library is ready, return immediately
-            result.sendResult(mMusicProvider.getChildren(parentMediaId, getResources()));
-        } else {
-            // otherwise, only return results when the music library is retrieved
-            result.detach();
-            mMusicProvider.retrieveMediaAsync(new MusicProvider.Callback() {
-                @Override
-                public void onMusicCatalogReady(boolean success) {
-                    result.sendResult(mMusicProvider.getChildren(parentMediaId, getResources()));
-                }
-            });
-        }
+//        Log.d(TAG, "OnLoadChildren: parentMediaId=", parentMediaId);
+//        if (MEDIA_ID_EMPTY_ROOT.equals(parentMediaId)) {
+//            result.sendResult(new ArrayList<MediaItem>());
+//        } else if (mMusicProvider.isInitialized()) {
+//            // if music library is ready, return immediately
+//            result.sendResult(mMusicProvider.getChildren(parentMediaId, getResources()));
+//        } else {
+//            // otherwise, only return results when the music library is retrieved
+//            result.detach();
+//            mMusicProvider.retrieveMediaAsync(new MusicProvider.Callback() {
+//                @Override
+//                public void onMusicCatalogReady(boolean success) {
+//                    result.sendResult(mMusicProvider.getChildren(parentMediaId, getResources()));
+//                }
+//            });
+//        }
     }
 
     /**
@@ -387,17 +384,17 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
     }
 
     private void registerCarConnectionReceiver() {
-        IntentFilter filter = new IntentFilter(CarHelper.ACTION_MEDIA_STATUS);
-        mCarConnectionReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String connectionEvent = intent.getStringExtra(CarHelper.MEDIA_CONNECTION_STATUS);
-                mIsConnectedToCar = CarHelper.MEDIA_CONNECTED.equals(connectionEvent);
-                Log.i(TAG, "Connection event to Android Auto: ", connectionEvent,
-                        " isConnectedToCar=", mIsConnectedToCar);
-            }
-        };
-        registerReceiver(mCarConnectionReceiver, filter);
+//        IntentFilter filter = new IntentFilter(CarHelper.ACTION_MEDIA_STATUS);
+//        mCarConnectionReceiver = new BroadcastReceiver() {
+//            @Override
+//            public void onReceive(Context context, Intent intent) {
+//                String connectionEvent = intent.getStringExtra(CarHelper.MEDIA_CONNECTION_STATUS);
+//                mIsConnectedToCar = CarHelper.MEDIA_CONNECTED.equals(connectionEvent);
+//                Log.i(TAG, "Connection event to Android Auto: ", connectionEvent,
+//                        " isConnectedToCar=", mIsConnectedToCar);
+//            }
+//        };
+//        registerReceiver(mCarConnectionReceiver, filter);
     }
 
     private void unregisterCarConnectionReceiver() {
@@ -439,7 +436,7 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
             Log.d(TAG, "onSessionEnded");
             mSessionExtras.remove(EXTRA_CONNECTED_CAST);
             mSession.setExtras(mSessionExtras);
-            Playback playback = new LocalPlayback(MusicService.this, mMusicProvider);
+            Playback playback = new LocalPlayback(ExoMusicService.this, mMusicProvider);
             mMediaRouter.setMediaSessionCompat(null);
             mPlaybackManager.switchToPlayback(playback, false);
         }
@@ -451,13 +448,13 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
         @Override
         public void onSessionStarted(CastSession session, String sessionId) {
             // In case we are casting, send the device name as an extra on MediaSession metadata.
-            mSessionExtras.putString(EXTRA_CONNECTED_CAST,
-                    session.getCastDevice().getFriendlyName());
-            mSession.setExtras(mSessionExtras);
-            // Now we can switch to CastPlayback
-            Playback playback = new CastPlayback(mMusicProvider, MusicService.this);
-            mMediaRouter.setMediaSessionCompat(mSession);
-            mPlaybackManager.switchToPlayback(playback, true);
+//            mSessionExtras.putString(EXTRA_CONNECTED_CAST,
+//                    session.getCastDevice().getFriendlyName());
+//            mSession.setExtras(mSessionExtras);
+//            // Now we can switch to CastPlayback
+//            Playback playback = new CastPlayback(mMusicProvider, MusicService.this);
+//            mMediaRouter.setMediaSessionCompat(mSession);
+//            mPlaybackManager.switchToPlayback(playback, true);
         }
 
         @Override

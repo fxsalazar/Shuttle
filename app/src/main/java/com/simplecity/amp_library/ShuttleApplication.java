@@ -26,7 +26,6 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.simplecity.amp_library.constants.Config;
 import com.simplecity.amp_library.dagger.component.AppComponent;
-import com.simplecity.amp_library.dagger.component.DaggerAppComponent;
 import com.simplecity.amp_library.dagger.module.AppModule;
 import com.simplecity.amp_library.model.Genre;
 import com.simplecity.amp_library.model.Query;
