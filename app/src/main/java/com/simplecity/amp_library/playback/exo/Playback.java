@@ -15,6 +15,8 @@
  */
 package com.simplecity.amp_library.playback.exo;
 
+import android.support.v4.media.session.PlaybackStateCompat;
+
 import com.simplecity.amp_library.playback.MusicService;
 
 import static android.support.v4.media.session.MediaSessionCompat.QueueItem;
@@ -33,6 +35,7 @@ public interface Playback {
 
     /**
      * Stop the playback. All resources can be de-allocated by implementations here.
+     *
      * @param notifyListeners if true and a callback has been set by setCallback,
      *                        callback.onPlaybackStatusChanged will be called after changing
      *                        the state.
@@ -80,17 +83,22 @@ public interface Playback {
 
     String getCurrentMediaId();
 
+    void setVolume(float volume);
+
+    int getAudioSessionId();
+
     interface Callback {
         /**
          * On current music completed.
          */
         void onCompletion();
+
         /**
          * on Playback status changed
          * Implementations can use this callback to update
          * playback state on the media sessions.
          */
-        void onPlaybackStatusChanged(int state);
+        void onPlaybackStatusChanged(@PlaybackStateCompat.State int state);
 
         /**
          * @param error to be added to the PlaybackState

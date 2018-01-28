@@ -20,7 +20,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -81,10 +80,10 @@ public final class LocalPlayback implements Playback {
 
     private int mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
     private final AudioManager mAudioManager;
-    private SimpleExoPlayer mExoPlayer;
+    private SimpleExoPlayer exoPlayer;
     private final ExoPlayerEventListener mEventListener = new ExoPlayerEventListener();
 
-    // Whether to return STATE_NONE or STATE_STOPPED when mExoPlayer is null;
+    // Whether to return STATE_NONE or STATE_STOPPED when exoPlayer is null;
     private boolean mExoPlayerNullIsStopped = false;
 
     private final IntentFilter mAudioNoisyIntentFilter =
@@ -133,23 +132,24 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public void setState(int state) {
-        // Nothing to do (mExoPlayer holds its own state).
+        // Nothing to do (exoPlayer holds its own state).
     }
 
     @Override
+    @PlaybackStateCompat.State
     public int getState() {
-        if (mExoPlayer == null) {
+        if (exoPlayer == null) {
             return mExoPlayerNullIsStopped
                     ? PlaybackStateCompat.STATE_STOPPED
                     : PlaybackStateCompat.STATE_NONE;
         }
-        switch (mExoPlayer.getPlaybackState()) {
+        switch (exoPlayer.getPlaybackState()) {
             case Player.STATE_IDLE:
                 return PlaybackStateCompat.STATE_PAUSED;
             case Player.STATE_BUFFERING:
                 return PlaybackStateCompat.STATE_BUFFERING;
             case Player.STATE_READY:
-                return mExoPlayer.getPlayWhenReady()
+                return exoPlayer.getPlayWhenReady()
                         ? PlaybackStateCompat.STATE_PLAYING
                         : PlaybackStateCompat.STATE_PAUSED;
             case Player.STATE_ENDED:
@@ -166,12 +166,12 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public boolean isPlaying() {
-        return mPlayOnFocusGain || (mExoPlayer != null && mExoPlayer.getPlayWhenReady());
+        return mPlayOnFocusGain || (exoPlayer != null && exoPlayer.getPlayWhenReady());
     }
 
     @Override
     public long getCurrentStreamPosition() {
-        return mExoPlayer != null ? mExoPlayer.getCurrentPosition() : 0;
+        return exoPlayer != null ? exoPlayer.getCurrentPosition() : 0;
     }
 
     @Override
@@ -190,7 +190,7 @@ public final class LocalPlayback implements Playback {
             mCurrentMediaId = mediaId;
         }
 
-        if (mediaHasChanged || mExoPlayer == null) {
+        if (mediaHasChanged || exoPlayer == null) {
             releaseResources(false); // release everything except the player
             MediaMetadataCompat track = MediaMetadataCompat.fromMediaMetadata(null);
             // TODO: 28/01/2018
@@ -199,16 +199,16 @@ public final class LocalPlayback implements Playback {
 //                            MediaIDHelper.extractMusicIDFromMediaID(
 //                                    item.getDescription().getMediaId()));
 
-            String source = track.getString(MusicProviderSource.CUSTOM_METADATA_TRACK_SOURCE);
-            if (source != null) {
-                source = source.replaceAll(" ", "%20"); // Escape spaces for URLs
-            }
+//            String source = track.getString(MusicProviderSource.CUSTOM_METADATA_TRACK_SOURCE);
+//            if (source != null) {
+//                source = source.replaceAll(" ", "%20"); // Escape spaces for URLs
+//            }
 
-            if (mExoPlayer == null) {
-                mExoPlayer =
+            if (exoPlayer == null) {
+                exoPlayer =
                         ExoPlayerFactory.newSimpleInstance(
                                 mContext, new DefaultTrackSelector());
-                mExoPlayer.addListener(mEventListener);
+                exoPlayer.addListener(mEventListener);
             }
 
             // Android "O" makes much greater use of AudioAttributes, especially
@@ -220,7 +220,7 @@ public final class LocalPlayback implements Playback {
                     .setContentType(CONTENT_TYPE_MUSIC)
                     .setUsage(USAGE_MEDIA)
                     .build();
-            mExoPlayer.setAudioAttributes(audioAttributes);
+            exoPlayer.setAudioAttributes(audioAttributes);
 
             // Produces DataSource instances through which media data is loaded.
             DataSource.Factory dataSourceFactory =
@@ -231,11 +231,11 @@ public final class LocalPlayback implements Playback {
             // The MediaSource represents the media to be played.
             MediaSource mediaSource =
                     new ExtractorMediaSource(
-                            Uri.parse(source), dataSourceFactory, extractorsFactory, null, null);
+                            item.getDescription().getMediaUri(), dataSourceFactory, extractorsFactory, null, null);
 
             // Prepares media to play (happens on background thread) and triggers
             // {@code onPlayerStateChanged} callback when the stream is ready to play.
-            mExoPlayer.prepare(mediaSource);
+            exoPlayer.prepare(mediaSource);
 
             // If we are streaming from the internet, we want to hold a
             // Wifi lock, which prevents the Wifi radio from going to
@@ -249,8 +249,8 @@ public final class LocalPlayback implements Playback {
     @Override
     public void pause() {
         // Pause player and cancel the 'foreground service' state.
-        if (mExoPlayer != null) {
-            mExoPlayer.setPlayWhenReady(false);
+        if (exoPlayer != null) {
+            exoPlayer.setPlayWhenReady(false);
         }
         // While paused, retain the player instance, but give up audio focus.
         releaseResources(false);
@@ -260,9 +260,9 @@ public final class LocalPlayback implements Playback {
     @Override
     public void seekTo(long position) {
         Log.d(TAG, "seekTo called with " + position);
-        if (mExoPlayer != null) {
+        if (exoPlayer != null) {
             registerAudioNoisyReceiver();
-            mExoPlayer.seekTo(position);
+            exoPlayer.seekTo(position);
         }
     }
 
@@ -279,6 +279,16 @@ public final class LocalPlayback implements Playback {
     @Override
     public String getCurrentMediaId() {
         return mCurrentMediaId;
+    }
+
+    @Override
+    public void setVolume(float volume) {
+        exoPlayer.setVolume(volume);
+    }
+
+    @Override
+    public int getAudioSessionId() {
+        return exoPlayer == null ? 0 : exoPlayer.getAudioSessionId();
     }
 
     private void tryToGetAudioFocus() {
@@ -320,14 +330,14 @@ public final class LocalPlayback implements Playback {
 
             if (mCurrentAudioFocusState == AUDIO_NO_FOCUS_CAN_DUCK) {
                 // We're permitted to play, but only if we 'duck', ie: play softly
-                mExoPlayer.setVolume(VOLUME_DUCK);
+                exoPlayer.setVolume(VOLUME_DUCK);
             } else {
-                mExoPlayer.setVolume(VOLUME_NORMAL);
+                exoPlayer.setVolume(VOLUME_NORMAL);
             }
 
             // If we were playing when we lost focus, we need to resume playing.
             if (mPlayOnFocusGain) {
-                mExoPlayer.setPlayWhenReady(true);
+                exoPlayer.setPlayWhenReady(true);
                 mPlayOnFocusGain = false;
             }
         }
@@ -350,7 +360,7 @@ public final class LocalPlayback implements Playback {
                             // Lost audio focus, but will gain it back (shortly), so note whether
                             // playback should resume
                             mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-                            mPlayOnFocusGain = mExoPlayer != null && mExoPlayer.getPlayWhenReady();
+                            mPlayOnFocusGain = exoPlayer != null && exoPlayer.getPlayWhenReady();
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS:
                             // Lost audio focus, probably "permanently"
@@ -358,7 +368,7 @@ public final class LocalPlayback implements Playback {
                             break;
                     }
 
-                    if (mExoPlayer != null) {
+                    if (exoPlayer != null) {
                         // Update the player state based on the change
                         configurePlayerState();
                     }
@@ -375,10 +385,10 @@ public final class LocalPlayback implements Playback {
         Log.d(TAG, "releaseResources. releasePlayer=" + releasePlayer);
 
         // Stops and releases player (if requested and available).
-        if (releasePlayer && mExoPlayer != null) {
-            mExoPlayer.release();
-            mExoPlayer.removeListener(mEventListener);
-            mExoPlayer = null;
+        if (releasePlayer && exoPlayer != null) {
+            exoPlayer.release();
+            exoPlayer.removeListener(mEventListener);
+            exoPlayer = null;
             mExoPlayerNullIsStopped = true;
             mPlayOnFocusGain = false;
         }

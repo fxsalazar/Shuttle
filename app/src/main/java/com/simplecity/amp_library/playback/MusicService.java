@@ -39,6 +39,7 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -68,6 +69,8 @@ import com.simplecity.amp_library.http.HttpServer;
 import com.simplecity.amp_library.model.Album;
 import com.simplecity.amp_library.model.Song;
 import com.simplecity.amp_library.notifications.MusicNotificationHelper;
+import com.simplecity.amp_library.playback.exo.LocalPlayback;
+import com.simplecity.amp_library.playback.exo.Playback;
 import com.simplecity.amp_library.rx.UnsafeAction;
 import com.simplecity.amp_library.rx.UnsafeConsumer;
 import com.simplecity.amp_library.services.Equalizer;
@@ -234,7 +237,7 @@ public class MusicService extends Service {
     private final IBinder mBinder = new LocalBinder(this);
 
     @Nullable
-    MultiPlayer player;
+    Playback player;
 
     int shuffleMode = ShuffleMode.OFF;
     int repeatMode = RepeatMode.OFF;
@@ -332,7 +335,7 @@ public class MusicService extends Service {
         if (location == LOCAL && location != playbackLocation) {
             try {
                 if (castManager != null && castManager.isConnected()) {
-                    if (player != null && player.isInitialized()) {
+                    if (player != null && player.isConnected()) {
                         player.seekTo(castManager.getCurrentMediaPosition());
                     }
                     castManager.stop();
@@ -601,8 +604,27 @@ public class MusicService extends Service {
         registerExternalStorageListener();
         registerA2dpServiceListener();
 
-        player = new MultiPlayer(this);
-        player.setHandler(playerHandler);
+        player = new LocalPlayback(this, null);
+        player.setCallback(new Playback.Callback() {
+            @Override
+            public void onCompletion() {
+            }
+
+            @Override
+            public void onPlaybackStatusChanged(int state) {
+
+            }
+
+            @Override
+            public void onError(String error) {
+                playerHandler.sendMessageDelayed(playerHandler.obtainMessage(MusicService.PlayerHandler.SERVER_DIED), 2000);
+            }
+
+            @Override
+            public void setCurrentMediaId(String mediaId) {
+
+            }
+        });
 
         equalizer = new Equalizer(this);
 
@@ -872,7 +894,7 @@ public class MusicService extends Service {
         // release all MediaPlayer resources, including the native player and
         // wakelocks
         if (player != null) {
-            player.release();
+            player.stop(false);
             player = null;
         }
 
@@ -1034,8 +1056,8 @@ public class MusicService extends Service {
         editor.putInt("repeatmode", repeatMode);
         editor.putInt("shufflemode", shuffleMode);
 
-        if (player != null && player.isInitialized()) {
-            editor.putLong("seekpos", player.getPosition());
+        if (player != null && player.isConnected()) {
+            editor.putLong("seekpos", player.getCurrentStreamPosition());
         }
 
         editor.apply();
@@ -1176,7 +1198,7 @@ public class MusicService extends Service {
                                 openCurrentAndNext();
                             }
 
-                            if (player == null || !player.isInitialized()) {
+                            if (player == null || !player.isConnected()) {
                                 // couldn't restore the saved state
                                 queueReloadComplete();
                                 return;
@@ -1667,7 +1689,8 @@ public class MusicService extends Service {
             final Song nextSong = getCurrentPlaylist().get(nextPlayPos);
             try {
                 if (player != null) {
-                    player.setNextDataSource(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI + "/" + nextSong.id);
+                    // TODO: 28/01/2018
+//                    player.setNextDataSource(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI + "/" + nextSong.id);
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error: " + e.getMessage());
@@ -1676,7 +1699,8 @@ public class MusicService extends Service {
         } else {
             try {
                 if (player != null) {
-                    player.setNextDataSource(null);
+                    // TODO: 28/01/2018
+//                    player.setNextDataSource(null);
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error: " + e.getMessage());
@@ -1691,8 +1715,8 @@ public class MusicService extends Service {
             currentSong = song;
 
             if (player != null) {
-                player.setDataSource(song.path);
-                if (player != null && player.isInitialized()) {
+                player.play(songToQueueItem(song));
+                if (player != null && player.isConnected()) {
                     openFailedCounter = 0;
                     return true;
                 }
@@ -1701,6 +1725,13 @@ public class MusicService extends Service {
             stop(true);
             return false;
         }
+    }
+
+    private MediaSessionCompat.QueueItem songToQueueItem(Song song) {
+        MediaDescriptionCompat description = new MediaDescriptionCompat
+                .Builder()
+                .setMediaUri(Uri.parse(song.path)).build();
+        return new MediaSessionCompat.QueueItem(description, song.id);
     }
 
     /**
@@ -1795,13 +1826,13 @@ public class MusicService extends Service {
 
         switch (playbackLocation) {
             case LOCAL: {
-                if (player != null && player.isInitialized()) {
+                if (player != null && player.isConnected()) {
                     // if we are at the end of the song, go to the next song first
-                    final long duration = player.getDuration();
-                    if (repeatMode != RepeatMode.ONE && duration > 2000
-                            && player.getPosition() >= duration - 2000) {
-                        gotoNext(true);
-                    }
+//                    final long duration = player.getDuration();
+//                    if (repeatMode != RepeatMode.ONE && duration > 2000
+//                            && player.getPosition() >= duration - 2000) {
+//                        gotoNext(true);
+//                    }
                     player.start();
                     // make sure we fade in, in case a previous fadein was stopped
                     // because of another focus loss
@@ -1826,11 +1857,11 @@ public class MusicService extends Service {
             }
             case REMOTE: {
                 // if we are at the end of the song, go to the next song first
-                final long duration = player.getDuration();
-                if (repeatMode != RepeatMode.ONE && duration > 2000
-                        && player.getPosition() >= duration - 2000) {
-                    gotoNext(true);
-                }
+//                final long duration = player.getDuration();
+//                if (repeatMode != RepeatMode.ONE && duration > 2000
+//                        && player.getPosition() >= duration - 2000) {
+//                    gotoNext(true);
+//                }
 
                 if (!isSupposedToBePlaying) {
                     isSupposedToBePlaying = true;
@@ -2010,7 +2041,7 @@ public class MusicService extends Service {
 
         switch (playbackLocation) {
             case LOCAL: {
-                if (player != null && player.isInitialized()) {
+                if (player != null && player.isConnected()) {
                     player.stop(false);
                 }
                 if (goToIdle) {
@@ -2022,7 +2053,7 @@ public class MusicService extends Service {
             }
             case REMOTE: {
                 try {
-                    if (player != null && player.isInitialized()) {
+                    if (player != null && player.isConnected()) {
                         player.seekTo(castManager.getCurrentMediaPosition());
                         player.stop(false);
                     }
@@ -2457,7 +2488,7 @@ public class MusicService extends Service {
             if (getCurrentPlaylist() != null
                     && !getCurrentPlaylist().isEmpty()
                     && playPos >= 0
-                    && player.isInitialized()
+                    && player.isConnected()
                     && playPos < getCurrentPlaylist().size()) {
                 return getCurrentPlaylist().get(playPos).id;
             }
@@ -2598,7 +2629,7 @@ public class MusicService extends Service {
             switch (playbackLocation) {
                 case LOCAL: {
                     if (player != null) {
-                        return player.getPosition();
+                        return player.getCurrentStreamPosition();
                     }
                     break;
                 }
@@ -2608,7 +2639,7 @@ public class MusicService extends Service {
                     } catch (Exception e) {
                         Log.e(TAG, e.toString());
                         if (player != null) {
-                            return player.getPosition();
+                            return player.getCurrentStreamPosition();
                         }
                     }
 
@@ -2626,11 +2657,11 @@ public class MusicService extends Service {
      */
     public void seekTo(long position) {
         synchronized (this) {
-            if (player != null && player.isInitialized()) {
+            if (player != null && player.isConnected()) {
                 if (position < 0) {
                     position = 0;
-                } else if (position > player.getDuration()) {
-                    position = player.getDuration();
+                } else if (position > currentSong.duration) {
+                    position = currentSong.duration;
                 }
 
                 player.seekTo(position);
