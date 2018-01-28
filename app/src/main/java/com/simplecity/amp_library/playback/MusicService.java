@@ -2011,7 +2011,7 @@ public class MusicService extends Service {
         switch (playbackLocation) {
             case LOCAL: {
                 if (player != null && player.isInitialized()) {
-                    player.stop();
+                    player.stop(false);
                 }
                 if (goToIdle) {
                     setIsSupposedToBePlaying(false, false);
@@ -2024,7 +2024,7 @@ public class MusicService extends Service {
                 try {
                     if (player != null && player.isInitialized()) {
                         player.seekTo(castManager.getCurrentMediaPosition());
-                        player.stop();
+                        player.stop(false);
                     }
                     playbackState = STOPPED;
                 } catch (Exception e) {

@@ -17,7 +17,10 @@ import java.lang.ref.WeakReference;
 /**
  * Provides a unified interface for dealing with midi files and other media
  * files.
+ *
+ * @deprecated Use LocalPlayback
  */
+@Deprecated
 class MultiPlayer implements
         MediaPlayer.OnErrorListener,
         MediaPlayer.OnCompletionListener {
@@ -128,7 +131,7 @@ class MultiPlayer implements
         }
     }
 
-    public void stop() {
+    public void stop(boolean notifyListeners) {
         try {
             mCurrentMediaPlayer.reset();
         } catch (IllegalStateException e) {
@@ -142,7 +145,7 @@ class MultiPlayer implements
      * You CANNOT use this player anymore after calling release()
      */
     public void release() {
-        stop();
+        stop(false);
         mCurrentMediaPlayer.release();
     }
 
@@ -174,9 +177,9 @@ class MultiPlayer implements
         }
     }
 
-    void seekTo(long whereto) {
+    public void seekTo(long position) {
         try {
-            mCurrentMediaPlayer.seekTo((int) whereto);
+            mCurrentMediaPlayer.seekTo((int) position);
         } catch (IllegalStateException e) {
             Log.e(TAG, "Error seeking MultiPlayer: " + e.getLocalizedMessage());
         }
