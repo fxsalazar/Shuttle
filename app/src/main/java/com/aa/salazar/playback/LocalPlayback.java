@@ -287,6 +287,11 @@ public final class LocalPlayback implements Playback {
         return exoPlayer.getAudioSessionId();
     }
 
+    @Override
+    public void setVolume(float volume) {
+        exoPlayer.setVolume(volume);
+    }
+
     private void tryToGetAudioFocus() {
         LogHelper.d(TAG, "tryToGetAudioFocus");
         int result =

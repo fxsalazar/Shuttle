@@ -55,7 +55,9 @@ public class CastPlayback implements Playback {
 
     private int mPlaybackState;
 
-    /** Playback interface Callbacks */
+    /**
+     * Playback interface Callbacks
+     */
     private Callback mCallback;
     private long mCurrentPosition;
     private String mCurrentMediaId;
@@ -168,6 +170,17 @@ public class CastPlayback implements Playback {
     }
 
     @Override
+    public int getAudioSessionId() {
+        // TODO: 29/01/2018 is there an AudioSessionId for cast?
+        return 0;
+    }
+
+    @Override
+    public void setVolume(float volume) {
+        mRemoteMediaClient.setStreamVolume(volume);
+    }
+
+    @Override
     public void setCallback(Callback callback) {
         this.mCallback = callback;
     }
@@ -209,7 +222,7 @@ public class CastPlayback implements Playback {
      * Helper method to convert a {@link android.media.MediaMetadata} to a
      * {@link com.google.android.gms.cast.MediaInfo} used for sending media to the receiver app.
      *
-     * @param track {@link com.google.android.gms.cast.MediaMetadata}
+     * @param track      {@link com.google.android.gms.cast.MediaMetadata}
      * @param customData custom data specifies the local mediaId used by the player.
      * @return mediaInfo {@link com.google.android.gms.cast.MediaInfo}
      */
@@ -221,7 +234,7 @@ public class CastPlayback implements Playback {
                         track.getDescription().getTitle().toString());
         mediaMetadata.putString(MediaMetadata.KEY_SUBTITLE,
                 track.getDescription().getSubtitle() == null ? "" :
-                    track.getDescription().getSubtitle().toString());
+                        track.getDescription().getSubtitle().toString());
         mediaMetadata.putString(MediaMetadata.KEY_ALBUM_ARTIST,
                 track.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ARTIST));
         mediaMetadata.putString(MediaMetadata.KEY_ALBUM_TITLE,

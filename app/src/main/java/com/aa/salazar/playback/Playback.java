@@ -80,6 +80,8 @@ public interface Playback {
 
     int getAudioSessionId();
 
+    void setVolume(float volume);
+
     interface Callback {
         /**
          * On current music completed.
