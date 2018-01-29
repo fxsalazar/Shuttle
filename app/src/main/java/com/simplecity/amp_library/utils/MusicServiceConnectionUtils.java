@@ -13,6 +13,7 @@ import com.simplecity.amp_library.playback.MusicService;
 
 import java.util.WeakHashMap;
 
+@Deprecated
 public class MusicServiceConnectionUtils {
 
     public static LocalBinder serviceBinder = null;

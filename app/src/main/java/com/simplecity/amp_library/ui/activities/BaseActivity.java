@@ -11,10 +11,13 @@ import android.os.IBinder;
 import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.media.session.MediaControllerCompat;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.widget.Toast;
 
+import com.aa.salazar.MediaBrowserLifecycleManager;
+import com.aa.salazar.MediaBrowserManager;
 import com.afollestad.aesthetic.AestheticActivity;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
@@ -32,13 +35,19 @@ import java.util.List;
 
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
-public abstract class BaseActivity extends AestheticActivity implements ServiceConnection {
+public abstract class BaseActivity extends AestheticActivity implements ServiceConnection, MediaBrowserLifecycleManager.Callback {
 
     @Nullable
     private MusicServiceConnectionUtils.ServiceToken token;
 
     @Nullable
     private BillingManager billingManager;
+
+    private MediaBrowserManager mediaBrowserManager;
+    private MediaControllerCompat.Callback mediaControllerCallback = new MediaControllerCompat.Callback() {
+    };
+
+
 
     @CallSuper
     protected void onCreate(final Bundle savedInstanceState) {
@@ -51,6 +60,12 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
             public void onPermissionResult(Permiso.ResultSet resultSet) {
                 if (resultSet.areAllPermissionsGranted()) {
                     bindService();
+                    MediaBrowserLifecycleManager.bind(
+                            BaseActivity.this,
+                            BaseActivity.this,
+                            BaseActivity.this,
+                            mediaControllerCallback,
+                            com.aa.salazar.MusicService.class);
                 } else {
                     Toast.makeText(BaseActivity.this, "Permission check failed", Toast.LENGTH_LONG).show();
                     finish();
@@ -180,4 +195,13 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
 
     protected abstract String screenName();
 
+    @Override
+    public void onConnected(MediaControllerCompat mediaControllerCompat) {
+
+    }
+
+    @Override
+    public void onError(Exception exception) {
+
+    }
 }
