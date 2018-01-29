@@ -13,19 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.simplecity.amp_library.playback.exo;
+package com.aa.salazar.playback;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
-import android.util.Log;
 
+import com.aa.salazar.MusicService;
+import com.aa.salazar.exo.MusicProvider;
+import com.aa.salazar.exo.MusicProviderSource;
+import com.aa.salazar.utils.LogHelper;
+import com.aa.salazar.utils.MediaIDHelper;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.PlaybackParameters;
@@ -43,7 +48,6 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
-import com.simplecity.amp_library.playback.MusicService;
 
 import static android.support.v4.media.session.MediaSessionCompat.QueueItem;
 import static com.google.android.exoplayer2.C.CONTENT_TYPE_MUSIC;
@@ -55,7 +59,7 @@ import static com.google.android.exoplayer2.C.USAGE_MEDIA;
  */
 public final class LocalPlayback implements Playback {
 
-    private static final String TAG = LocalPlayback.class.getSimpleName();
+    private static final String TAG = LogHelper.makeLogTag(LocalPlayback.class);
 
     // The volume we set the media player to when we lose audio focus, but are
     // allowed to reduce the volume instead of stopping playback.
@@ -70,36 +74,36 @@ public final class LocalPlayback implements Playback {
     // we have full audio focus
     private static final int AUDIO_FOCUSED = 2;
 
-    private final Context mContext;
-    private final WifiManager.WifiLock mWifiLock;
-    private boolean mPlayOnFocusGain;
-    private Callback mCallback;
-    private final MusicProvider mMusicProvider;
-    private boolean mAudioNoisyReceiverRegistered;
-    private String mCurrentMediaId;
+    private final Context context;
+    private final WifiManager.WifiLock wifiLock;
+    private boolean playOnFocusGain;
+    private Callback callback;
+    private final MusicProvider musicProvider;
+    private boolean audioNoisyReceiverRegistered;
+    private String currentMediaId;
 
-    private int mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-    private final AudioManager mAudioManager;
+    private int currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
+    private final AudioManager audioManager;
     private SimpleExoPlayer exoPlayer;
-    private final ExoPlayerEventListener mEventListener = new ExoPlayerEventListener();
+    private final ExoPlayerEventListener eventListener = new ExoPlayerEventListener();
 
     // Whether to return STATE_NONE or STATE_STOPPED when exoPlayer is null;
-    private boolean mExoPlayerNullIsStopped = false;
+    private boolean exoPlayerNullIsStopped = false;
 
-    private final IntentFilter mAudioNoisyIntentFilter =
+    private final IntentFilter audioNoisyIntentFilter =
             new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
 
-    private final BroadcastReceiver mAudioNoisyReceiver =
+    private final BroadcastReceiver audioNoisyReceiver =
             new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
-                        Log.d(TAG, "Headphones disconnected.");
+                        LogHelper.d(TAG, "Headphones disconnected.");
                         if (isPlaying()) {
                             Intent i = new Intent(context, MusicService.class);
-                            i.setAction(ExoMusicService.ACTION_CMD);
-                            i.putExtra(ExoMusicService.CMD_NAME, ExoMusicService.CMD_PAUSE);
-                            mContext.startService(i);
+                            i.setAction(MusicService.ACTION_CMD);
+                            i.putExtra(MusicService.CMD_NAME, MusicService.CMD_PAUSE);
+                            context.startService(i);
                         }
                     }
                 }
@@ -107,13 +111,13 @@ public final class LocalPlayback implements Playback {
 
     public LocalPlayback(Context context, MusicProvider musicProvider) {
         Context applicationContext = context.getApplicationContext();
-        this.mContext = applicationContext;
-        this.mMusicProvider = musicProvider;
+        this.context = applicationContext;
+        this.musicProvider = musicProvider;
 
-        this.mAudioManager =
+        this.audioManager =
                 (AudioManager) applicationContext.getSystemService(Context.AUDIO_SERVICE);
         // Create the Wifi lock (this does not acquire the lock, this just creates it)
-        this.mWifiLock =
+        this.wifiLock =
                 ((WifiManager) applicationContext.getSystemService(Context.WIFI_SERVICE))
                         .createWifiLock(WifiManager.WIFI_MODE_FULL, "uAmp_lock");
     }
@@ -136,10 +140,9 @@ public final class LocalPlayback implements Playback {
     }
 
     @Override
-    @PlaybackStateCompat.State
     public int getState() {
         if (exoPlayer == null) {
-            return mExoPlayerNullIsStopped
+            return exoPlayerNullIsStopped
                     ? PlaybackStateCompat.STATE_STOPPED
                     : PlaybackStateCompat.STATE_NONE;
         }
@@ -166,7 +169,7 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public boolean isPlaying() {
-        return mPlayOnFocusGain || (exoPlayer != null && exoPlayer.getPlayWhenReady());
+        return playOnFocusGain || (exoPlayer != null && exoPlayer.getPlayWhenReady());
     }
 
     @Override
@@ -181,34 +184,32 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public void play(QueueItem item) {
-        mPlayOnFocusGain = true;
+        playOnFocusGain = true;
         tryToGetAudioFocus();
         registerAudioNoisyReceiver();
         String mediaId = item.getDescription().getMediaId();
-        boolean mediaHasChanged = !TextUtils.equals(mediaId, mCurrentMediaId);
+        boolean mediaHasChanged = !TextUtils.equals(mediaId, currentMediaId);
         if (mediaHasChanged) {
-            mCurrentMediaId = mediaId;
+            currentMediaId = mediaId;
         }
 
         if (mediaHasChanged || exoPlayer == null) {
             releaseResources(false); // release everything except the player
-            MediaMetadataCompat track = MediaMetadataCompat.fromMediaMetadata(null);
-            // TODO: 28/01/2018
-//            MediaMetadataCompat track =
-//                    mMusicProvider.getMusic(
-//                            MediaIDHelper.extractMusicIDFromMediaID(
-//                                    item.getDescription().getMediaId()));
+            MediaMetadataCompat track =
+                    musicProvider.getMusic(
+                            MediaIDHelper.extractMusicIDFromMediaID(
+                                    item.getDescription().getMediaId()));
 
-//            String source = track.getString(MusicProviderSource.CUSTOM_METADATA_TRACK_SOURCE);
-//            if (source != null) {
-//                source = source.replaceAll(" ", "%20"); // Escape spaces for URLs
-//            }
+            String source = track.getString(MusicProviderSource.CUSTOM_METADATA_TRACK_SOURCE);
+            if (source != null) {
+                source = source.replaceAll(" ", "%20"); // Escape spaces for URLs
+            }
 
             if (exoPlayer == null) {
                 exoPlayer =
                         ExoPlayerFactory.newSimpleInstance(
-                                mContext, new DefaultTrackSelector());
-                exoPlayer.addListener(mEventListener);
+                                context, new DefaultTrackSelector());
+                exoPlayer.addListener(eventListener);
             }
 
             // Android "O" makes much greater use of AudioAttributes, especially
@@ -225,13 +226,13 @@ public final class LocalPlayback implements Playback {
             // Produces DataSource instances through which media data is loaded.
             DataSource.Factory dataSourceFactory =
                     new DefaultDataSourceFactory(
-                            mContext, Util.getUserAgent(mContext, "uamp"), null);
+                            context, Util.getUserAgent(context, "uamp"), null);
             // Produces Extractor instances for parsing the media data.
             ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
             // The MediaSource represents the media to be played.
             MediaSource mediaSource =
                     new ExtractorMediaSource(
-                            item.getDescription().getMediaUri(), dataSourceFactory, extractorsFactory, null, null);
+                            Uri.parse(source), dataSourceFactory, extractorsFactory, null, null);
 
             // Prepares media to play (happens on background thread) and triggers
             // {@code onPlayerStateChanged} callback when the stream is ready to play.
@@ -240,7 +241,7 @@ public final class LocalPlayback implements Playback {
             // If we are streaming from the internet, we want to hold a
             // Wifi lock, which prevents the Wifi radio from going to
             // sleep while the song is playing.
-            mWifiLock.acquire();
+            wifiLock.acquire();
         }
 
         configurePlayerState();
@@ -259,7 +260,7 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public void seekTo(long position) {
-        Log.d(TAG, "seekTo called with " + position);
+        LogHelper.d(TAG, "seekTo called with ", position);
         if (exoPlayer != null) {
             registerAudioNoisyReceiver();
             exoPlayer.seekTo(position);
@@ -268,48 +269,43 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public void setCallback(Callback callback) {
-        this.mCallback = callback;
+        this.callback = callback;
     }
 
     @Override
     public void setCurrentMediaId(String mediaId) {
-        this.mCurrentMediaId = mediaId;
+        this.currentMediaId = mediaId;
     }
 
     @Override
     public String getCurrentMediaId() {
-        return mCurrentMediaId;
-    }
-
-    @Override
-    public void setVolume(float volume) {
-        exoPlayer.setVolume(volume);
+        return currentMediaId;
     }
 
     @Override
     public int getAudioSessionId() {
-        return exoPlayer == null ? 0 : exoPlayer.getAudioSessionId();
+        return exoPlayer.getAudioSessionId();
     }
 
     private void tryToGetAudioFocus() {
-        Log.d(TAG, "tryToGetAudioFocus");
+        LogHelper.d(TAG, "tryToGetAudioFocus");
         int result =
-                mAudioManager.requestAudioFocus(
+                audioManager.requestAudioFocus(
                         mOnAudioFocusChangeListener,
                         AudioManager.STREAM_MUSIC,
                         AudioManager.AUDIOFOCUS_GAIN);
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            mCurrentAudioFocusState = AUDIO_FOCUSED;
+            currentAudioFocusState = AUDIO_FOCUSED;
         } else {
-            mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
+            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
         }
     }
 
     private void giveUpAudioFocus() {
-        Log.d(TAG, "giveUpAudioFocus");
-        if (mAudioManager.abandonAudioFocus(mOnAudioFocusChangeListener)
+        LogHelper.d(TAG, "giveUpAudioFocus");
+        if (audioManager.abandonAudioFocus(mOnAudioFocusChangeListener)
                 == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
+            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
         }
     }
 
@@ -321,14 +317,14 @@ public final class LocalPlayback implements Playback {
      * settings.
      */
     private void configurePlayerState() {
-        Log.d(TAG, "configurePlayerState. mCurrentAudioFocusState=" + mCurrentAudioFocusState);
-        if (mCurrentAudioFocusState == AUDIO_NO_FOCUS_NO_DUCK) {
+        LogHelper.d(TAG, "configurePlayerState. currentAudioFocusState=", currentAudioFocusState);
+        if (currentAudioFocusState == AUDIO_NO_FOCUS_NO_DUCK) {
             // We don't have audio focus and can't duck, so we have to pause
             pause();
         } else {
             registerAudioNoisyReceiver();
 
-            if (mCurrentAudioFocusState == AUDIO_NO_FOCUS_CAN_DUCK) {
+            if (currentAudioFocusState == AUDIO_NO_FOCUS_CAN_DUCK) {
                 // We're permitted to play, but only if we 'duck', ie: play softly
                 exoPlayer.setVolume(VOLUME_DUCK);
             } else {
@@ -336,9 +332,9 @@ public final class LocalPlayback implements Playback {
             }
 
             // If we were playing when we lost focus, we need to resume playing.
-            if (mPlayOnFocusGain) {
+            if (playOnFocusGain) {
                 exoPlayer.setPlayWhenReady(true);
-                mPlayOnFocusGain = false;
+                playOnFocusGain = false;
             }
         }
     }
@@ -347,24 +343,24 @@ public final class LocalPlayback implements Playback {
             new AudioManager.OnAudioFocusChangeListener() {
                 @Override
                 public void onAudioFocusChange(int focusChange) {
-                    Log.d(TAG, "onAudioFocusChange. focusChange=" + focusChange);
+                    LogHelper.d(TAG, "onAudioFocusChange. focusChange=", focusChange);
                     switch (focusChange) {
                         case AudioManager.AUDIOFOCUS_GAIN:
-                            mCurrentAudioFocusState = AUDIO_FOCUSED;
+                            currentAudioFocusState = AUDIO_FOCUSED;
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                             // Audio focus was lost, but it's possible to duck (i.e.: play quietly)
-                            mCurrentAudioFocusState = AUDIO_NO_FOCUS_CAN_DUCK;
+                            currentAudioFocusState = AUDIO_NO_FOCUS_CAN_DUCK;
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                             // Lost audio focus, but will gain it back (shortly), so note whether
                             // playback should resume
-                            mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-                            mPlayOnFocusGain = exoPlayer != null && exoPlayer.getPlayWhenReady();
+                            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
+                            playOnFocusGain = exoPlayer != null && exoPlayer.getPlayWhenReady();
                             break;
                         case AudioManager.AUDIOFOCUS_LOSS:
                             // Lost audio focus, probably "permanently"
-                            mCurrentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
+                            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
                             break;
                     }
 
@@ -382,33 +378,33 @@ public final class LocalPlayback implements Playback {
      * @param releasePlayer Indicates whether the player should also be released
      */
     private void releaseResources(boolean releasePlayer) {
-        Log.d(TAG, "releaseResources. releasePlayer=" + releasePlayer);
+        LogHelper.d(TAG, "releaseResources. releasePlayer=", releasePlayer);
 
         // Stops and releases player (if requested and available).
         if (releasePlayer && exoPlayer != null) {
             exoPlayer.release();
-            exoPlayer.removeListener(mEventListener);
+            exoPlayer.removeListener(eventListener);
             exoPlayer = null;
-            mExoPlayerNullIsStopped = true;
-            mPlayOnFocusGain = false;
+            exoPlayerNullIsStopped = true;
+            playOnFocusGain = false;
         }
 
-        if (mWifiLock.isHeld()) {
-            mWifiLock.release();
+        if (wifiLock.isHeld()) {
+            wifiLock.release();
         }
     }
 
     private void registerAudioNoisyReceiver() {
-        if (!mAudioNoisyReceiverRegistered) {
-            mContext.registerReceiver(mAudioNoisyReceiver, mAudioNoisyIntentFilter);
-            mAudioNoisyReceiverRegistered = true;
+        if (!audioNoisyReceiverRegistered) {
+            context.registerReceiver(audioNoisyReceiver, audioNoisyIntentFilter);
+            audioNoisyReceiverRegistered = true;
         }
     }
 
     private void unregisterAudioNoisyReceiver() {
-        if (mAudioNoisyReceiverRegistered) {
-            mContext.unregisterReceiver(mAudioNoisyReceiver);
-            mAudioNoisyReceiverRegistered = false;
+        if (audioNoisyReceiverRegistered) {
+            context.unregisterReceiver(audioNoisyReceiver);
+            audioNoisyReceiverRegistered = false;
         }
     }
 
@@ -435,14 +431,14 @@ public final class LocalPlayback implements Playback {
                 case Player.STATE_IDLE:
                 case Player.STATE_BUFFERING:
                 case Player.STATE_READY:
-                    if (mCallback != null) {
-                        mCallback.onPlaybackStatusChanged(getState());
+                    if (callback != null) {
+                        callback.onPlaybackStatusChanged(getState());
                     }
                     break;
                 case Player.STATE_ENDED:
                     // The media player finished playing the current song.
-                    if (mCallback != null) {
-                        mCallback.onCompletion();
+                    if (callback != null) {
+                        callback.onCompletion();
                     }
                     break;
             }
@@ -465,9 +461,9 @@ public final class LocalPlayback implements Playback {
                     what = "Unknown: " + error;
             }
 
-            Log.e(TAG, "ExoPlayer error: what=" + what);
-            if (mCallback != null) {
-                mCallback.onError("ExoPlayer error " + what);
+            LogHelper.e(TAG, "ExoPlayer error: what=" + what);
+            if (callback != null) {
+                callback.onError("ExoPlayer error " + what);
             }
         }
 

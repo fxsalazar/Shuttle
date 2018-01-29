@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.simplecity.amp_library.playback.exo;
+package com.aa.salazar.exo;
 
 import android.support.v4.media.MediaMetadataCompat;
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-package com.simplecity.amp_library.playback.exo;
+package com.aa.salazar;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -27,6 +27,7 @@ import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaBrowserServiceCompat;
+import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -34,17 +35,28 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.media.MediaRouter;
 import android.util.Log;
 
+import com.aa.salazar.exo.MediaNotificationManager;
+import com.aa.salazar.exo.MusicProvider;
+import com.aa.salazar.playback.CastPlayback;
+import com.aa.salazar.playback.LocalPlayback;
+import com.aa.salazar.playback.Playback;
+import com.aa.salazar.playback.PlaybackManager;
+import com.aa.salazar.playback.QueueManager;
+import com.aa.salazar.utils.LogHelper;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
-import com.google.android.gms.common.GoogleApiAvailability;
 import com.simplecity.amp_library.R;
-import com.simplecity.amp_library.playback.MusicService;
 import com.simplecity.amp_library.ui.activities.ShortcutTrampolineActivity;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
+
+import static com.aa.salazar.utils.MediaIDHelper.MEDIA_ID_EMPTY_ROOT;
+import static com.aa.salazar.utils.MediaIDHelper.MEDIA_ID_ROOT;
+
 
 /**
  * This class provides a MediaBrowser through a service. It exposes the media library to a browsing
@@ -101,7 +113,7 @@ import java.util.List;
  *
  * @see <a href="README.md">README.md</a> for more details.
  */
-public class ExoMusicService extends MediaBrowserServiceCompat implements
+public class MusicService extends MediaBrowserServiceCompat implements
         PlaybackManager.PlaybackServiceCallback {
 
     private static final String TAG = MusicService.class.getSimpleName();
@@ -123,20 +135,20 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
     // Delay stopSelf by using a handler.
     private static final int STOP_DELAY = 30000;
 
-    private MusicProvider mMusicProvider;
-    private PlaybackManager mPlaybackManager;
+    private MusicProvider musicProvider;
+    private PlaybackManager playbackManager;
 
-    private MediaSessionCompat mSession;
-    private MediaNotificationManager mMediaNotificationManager;
-    private Bundle mSessionExtras;
-    private final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
-    private MediaRouter mMediaRouter;
-    //    private PackageValidator mPackageValidator;
-    private SessionManager mCastSessionManager;
-    private SessionManagerListener<CastSession> mCastSessionManagerListener;
+    private MediaSessionCompat session;
+    private MediaNotificationManager mediaNotificationManager;
+    private Bundle sessionExtras;
+    private final DelayedStopHandler delayedStopHandler = new DelayedStopHandler(this);
+    private MediaRouter mediaRouter;
+    private PackageValidator packageValidator;
+    private SessionManager castSessionManager;
+    private SessionManagerListener<CastSession> castSessionManagerListener;
 
-    private boolean mIsConnectedToCar;
-    private BroadcastReceiver mCarConnectionReceiver;
+    private boolean isConnectedToCar;
+    private BroadcastReceiver carConnectionReceiver;
 
     /*
      * (non-Javadoc)
@@ -147,83 +159,85 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
         super.onCreate();
         Log.d(TAG, "onCreate");
 
-        mMusicProvider = new MusicProvider();
+        musicProvider = new MusicProvider();
 
         // To make the app more responsive, fetch and cache catalog information now.
         // This can help improve the response time in the method
         // {@link #onLoadChildren(String, Result<List<MediaItem>>) onLoadChildren()}.
-        mMusicProvider.retrieveMediaAsync(null /* Callback */);
+        musicProvider.retrieveMediaAsync(null /* Callback */);
 
-//        mPackageValidator = new PackageValidator(this);
+        packageValidator = new PackageValidator(this);
 
-        QueueManager queueManager = new QueueManager(mMusicProvider, getResources(),
+        QueueManager queueManager = new QueueManager(musicProvider, getResources(),
                 new QueueManager.MetadataUpdateListener() {
                     @Override
                     public void onMetadataChanged(MediaMetadataCompat metadata) {
-                        mSession.setMetadata(metadata);
+                        session.setMetadata(metadata);
                     }
 
                     @Override
                     public void onMetadataRetrieveError() {
-                        mPlaybackManager.updatePlaybackState(
+                        playbackManager.updatePlaybackState(
                                 getString(R.string.error_no_metadata));
                     }
 
                     @Override
                     public void onCurrentQueueIndexUpdated(int queueIndex) {
-                        mPlaybackManager.handlePlayRequest();
+                        playbackManager.handlePlayRequest();
                     }
 
                     @Override
                     public void onQueueUpdated(String title,
                                                List<MediaSessionCompat.QueueItem> newQueue) {
-                        mSession.setQueue(newQueue);
-                        mSession.setQueueTitle(title);
+                        session.setQueue(newQueue);
+                        session.setQueueTitle(title);
                     }
                 });
 
-        LocalPlayback playback = new LocalPlayback(this, mMusicProvider);
-        mPlaybackManager = new PlaybackManager(this, getResources(), mMusicProvider, queueManager,
+        LocalPlayback playback = new LocalPlayback(this, musicProvider);
+        playbackManager = new PlaybackManager(this, getResources(), musicProvider, queueManager,
                 playback);
 
         // Start a new MediaSession
-        mSession = new MediaSessionCompat(this, "MusicService");
-        setSessionToken(mSession.getSessionToken());
-        mSession.setCallback(mPlaybackManager.getMediaSessionCallback());
-        mSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
+        session = new MediaSessionCompat(this, "MusicService");
+        setSessionToken(session.getSessionToken());
+        session.setCallback(playbackManager.getMediaSessionCallback());
+        session.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
                 MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
         Context context = getApplicationContext();
         Intent intent = new Intent(context, ShortcutTrampolineActivity.class);
         PendingIntent pi = PendingIntent.getActivity(context, 99 /*request code*/,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        mSession.setSessionActivity(pi);
+        session.setSessionActivity(pi);
 
-        mSessionExtras = new Bundle();
-//        CarHelper.setSlotReservationFlags(mSessionExtras, true, true, true);
-//        WearHelper.setSlotReservationFlags(mSessionExtras, true, true);
-//        WearHelper.setUseBackgroundFromTheme(mSessionExtras, true);
-        mSession.setExtras(mSessionExtras);
+        sessionExtras = new Bundle();
+        // TODO: 29/01/2018 setub car and wear helpers
+//        CarHelper.setSlotReservationFlags(sessionExtras, true, true, true);
+//        WearHelper.setSlotReservationFlags(sessionExtras, true, true);
+//        WearHelper.setUseBackgroundFromTheme(sessionExtras, true);
+        session.setExtras(sessionExtras);
 
-        mPlaybackManager.updatePlaybackState(null);
+        playbackManager.updatePlaybackState(null);
 
         try {
-            mMediaNotificationManager = new MediaNotificationManager(this);
+            mediaNotificationManager = new MediaNotificationManager(this);
         } catch (RemoteException e) {
             throw new IllegalStateException("Could not create a MediaNotificationManager", e);
         }
 
-        int playServicesAvailable =
-                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
 
+        // TODO: 29/01/2018 setup castSessionManager
+//        int playServicesAvailable =
+//                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
 //        if (!TvHelper.isTvUiMode(this) && playServicesAvailable == ConnectionResult.SUCCESS) {
-//            mCastSessionManager = CastContext.getSharedInstance(this).getSessionManager();
-//            mCastSessionManagerListener = new CastSessionManagerListener();
-//            mCastSessionManager.addSessionManagerListener(mCastSessionManagerListener,
+//            castSessionManager = CastContext.getSharedInstance(this).getSessionManager();
+//            castSessionManagerListener = new CastSessionManagerListener();
+//            castSessionManager.addSessionManagerListener(castSessionManagerListener,
 //                    CastSession.class);
 //        }
 
-        mMediaRouter = MediaRouter.getInstance(getApplicationContext());
+        mediaRouter = MediaRouter.getInstance(getApplicationContext());
 
         registerCarConnectionReceiver();
     }
@@ -240,19 +254,19 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
             String command = startIntent.getStringExtra(CMD_NAME);
             if (ACTION_CMD.equals(action)) {
                 if (CMD_PAUSE.equals(command)) {
-                    mPlaybackManager.handlePauseRequest();
+                    playbackManager.handlePauseRequest();
                 } else if (CMD_STOP_CASTING.equals(command)) {
                     CastContext.getSharedInstance(this).getSessionManager().endCurrentSession(true);
                 }
             } else {
                 // Try to handle the intent as a media button event wrapped by MediaButtonReceiver
-                MediaButtonReceiver.handleIntent(mSession, startIntent);
+                MediaButtonReceiver.handleIntent(session, startIntent);
             }
         }
         // Reset the delay handler to enqueue a message to stop the service if
         // nothing is playing.
-        mDelayedStopHandler.removeCallbacksAndMessages(null);
-        mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
+        delayedStopHandler.removeCallbacksAndMessages(null);
+        delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
         return START_STICKY;
     }
 
@@ -276,41 +290,43 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
         Log.d(TAG, "onDestroy");
         unregisterCarConnectionReceiver();
         // Service is being killed, so make sure we release our resources
-        mPlaybackManager.handleStopRequest(null);
-        mMediaNotificationManager.stopNotification();
+        playbackManager.handleStopRequest(null);
+        mediaNotificationManager.stopNotification();
 
-        if (mCastSessionManager != null) {
-            mCastSessionManager.removeSessionManagerListener(mCastSessionManagerListener,
+        if (castSessionManager != null) {
+            castSessionManager.removeSessionManagerListener(castSessionManagerListener,
                     CastSession.class);
         }
 
-        mDelayedStopHandler.removeCallbacksAndMessages(null);
-        mSession.release();
+        delayedStopHandler.removeCallbacksAndMessages(null);
+        session.release();
     }
 
     @Override
     public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid,
                                  Bundle rootHints) {
-//        Log.d(TAG, "OnGetRoot: clientPackageName=" + clientPackageName +
-//                "; clientUid=" + clientUid + " ; rootHints=" + rootHints);
-//        // To ensure you are not allowing any arbitrary app to browse your app's contents, you
-//        // need to check the origin:
-//        if (!mPackageValidator.isCallerAllowed(this, clientPackageName, clientUid)) {
-//            // If the request comes from an untrusted package, return an empty browser root.
-//            // If you return null, then the media browser will not be able to connect and
-//            // no further calls will be made to other media browsing methods.
-//            Log.i(TAG, "OnGetRoot: Browsing NOT ALLOWED for unknown caller. "
-//                    + "Returning empty browser root so all apps can use MediaController."
-//                    + clientPackageName);
-//            return new MediaBrowserServiceCompat.BrowserRoot(MEDIA_ID_EMPTY_ROOT, null);
-//        }
+        LogHelper.d(TAG, "OnGetRoot: clientPackageName=" + clientPackageName,
+                "; clientUid=" + clientUid + " ; rootHints=", rootHints);
+        // To ensure you are not allowing any arbitrary app to browse your app's contents, you
+        // need to check the origin:
+        if (!packageValidator.isCallerAllowed(this, clientPackageName, clientUid)) {
+            // If the request comes from an untrusted package, return an empty browser root.
+            // If you return null, then the media browser will not be able to connect and
+            // no further calls will be made to other media browsing methods.
+            Log.i(TAG, "OnGetRoot: Browsing NOT ALLOWED for unknown caller. "
+                    + "Returning empty browser root so all apps can use MediaController."
+                    + clientPackageName);
+            return new MediaBrowserServiceCompat.BrowserRoot(MEDIA_ID_EMPTY_ROOT, null);
+        }
+
+        // TODO: 29/01/2018  what to do extra with valid package for Auto and Wear
 //        //noinspection StatementWithEmptyBody
 //        if (CarHelper.isValidCarPackage(clientPackageName)) {
 //            // Optional: if your app needs to adapt the music library to show a different subset
 //            // when connected to the car, this is where you should handle it.
 //            // If you want to adapt other runtime behaviors, like tweak ads or change some behavior
 //            // that should be different on cars, you should instead use the boolean flag
-//            // set by the BroadcastReceiver mCarConnectionReceiver (mIsConnectedToCar).
+//            // set by the BroadcastReceiver carConnectionReceiver (isConnectedToCar).
 //        }
 //        //noinspection StatementWithEmptyBody
 //        if (WearHelper.isValidWearCompanionPackage(clientPackageName)) {
@@ -318,30 +334,39 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
 //            // Wear device, you should return a different MEDIA ROOT here, and then,
 //            // on onLoadChildren, handle it accordingly.
 //        }
-//
-//        return new BrowserRoot(MEDIA_ID_ROOT, null);
-        return null;
+
+        return new BrowserRoot(MEDIA_ID_ROOT, null);
+    }
+
+    @Override
+    public void onLoadItem(String iteid, @NonNull Result<MediaItem> result) {
+        MediaDescriptionCompat description = new MediaDescriptionCompat
+                .Builder()
+                .setMediaId(iteid)
+                .setTitle(iteid)
+                .build();
+        result.sendResult(new MediaItem(description, MediaItem.FLAG_BROWSABLE));
     }
 
     @Override
     public void onLoadChildren(@NonNull final String parentMediaId,
                                @NonNull final Result<List<MediaItem>> result) {
-//        Log.d(TAG, "OnLoadChildren: parentMediaId=", parentMediaId);
-//        if (MEDIA_ID_EMPTY_ROOT.equals(parentMediaId)) {
-//            result.sendResult(new ArrayList<MediaItem>());
-//        } else if (mMusicProvider.isInitialized()) {
-//            // if music library is ready, return immediately
-//            result.sendResult(mMusicProvider.getChildren(parentMediaId, getResources()));
-//        } else {
-//            // otherwise, only return results when the music library is retrieved
-//            result.detach();
-//            mMusicProvider.retrieveMediaAsync(new MusicProvider.Callback() {
-//                @Override
-//                public void onMusicCatalogReady(boolean success) {
-//                    result.sendResult(mMusicProvider.getChildren(parentMediaId, getResources()));
-//                }
-//            });
-//        }
+        LogHelper.d(TAG, "OnLoadChildren: parentMediaId=", parentMediaId);
+        if (MEDIA_ID_EMPTY_ROOT.equals(parentMediaId)) {
+            result.sendResult(new ArrayList<MediaItem>());
+        } else if (musicProvider.isInitialized()) {
+            // if music library is ready, return immediately
+            result.sendResult(musicProvider.getChildren(parentMediaId, getResources()));
+        } else {
+            // otherwise, only return results when the music library is retrieved
+            result.detach();
+            musicProvider.retrieveMediaAsync(new MusicProvider.Callback() {
+                @Override
+                public void onMusicCatalogReady(boolean success) {
+                    result.sendResult(musicProvider.getChildren(parentMediaId, getResources()));
+                }
+            });
+        }
     }
 
     /**
@@ -349,9 +374,9 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
      */
     @Override
     public void onPlaybackStart() {
-        mSession.setActive(true);
+        session.setActive(true);
 
-        mDelayedStopHandler.removeCallbacksAndMessages(null);
+        delayedStopHandler.removeCallbacksAndMessages(null);
 
         // The service needs to continue running even after the bound client (usually a
         // MediaController) disconnects, otherwise the music playback will stop.
@@ -365,57 +390,58 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
      */
     @Override
     public void onPlaybackStop() {
-        mSession.setActive(false);
+        session.setActive(false);
         // Reset the delayed stop handler, so after STOP_DELAY it will be executed again,
         // potentially stopping the service.
-        mDelayedStopHandler.removeCallbacksAndMessages(null);
-        mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
+        delayedStopHandler.removeCallbacksAndMessages(null);
+        delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
         stopForeground(true);
     }
 
     @Override
     public void onNotificationRequired() {
-        mMediaNotificationManager.startNotification();
+        mediaNotificationManager.startNotification();
     }
 
     @Override
     public void onPlaybackStateUpdated(PlaybackStateCompat newState) {
-        mSession.setPlaybackState(newState);
+        session.setPlaybackState(newState);
     }
 
     private void registerCarConnectionReceiver() {
+        // TODO: 29/01/2018 register CarConnectionReceiver
 //        IntentFilter filter = new IntentFilter(CarHelper.ACTION_MEDIA_STATUS);
-//        mCarConnectionReceiver = new BroadcastReceiver() {
+//        carConnectionReceiver = new BroadcastReceiver() {
 //            @Override
 //            public void onReceive(Context context, Intent intent) {
 //                String connectionEvent = intent.getStringExtra(CarHelper.MEDIA_CONNECTION_STATUS);
-//                mIsConnectedToCar = CarHelper.MEDIA_CONNECTED.equals(connectionEvent);
+//                isConnectedToCar = CarHelper.MEDIA_CONNECTED.equals(connectionEvent);
 //                Log.i(TAG, "Connection event to Android Auto: ", connectionEvent,
-//                        " isConnectedToCar=", mIsConnectedToCar);
+//                        " isConnectedToCar=", isConnectedToCar);
 //            }
 //        };
-//        registerReceiver(mCarConnectionReceiver, filter);
+//        registerReceiver(carConnectionReceiver, filter);
     }
 
     private void unregisterCarConnectionReceiver() {
-        unregisterReceiver(mCarConnectionReceiver);
+        unregisterReceiver(carConnectionReceiver);
     }
 
     /**
      * A simple handler that stops the service if playback is not active (playing)
      */
     private static class DelayedStopHandler extends Handler {
-        private final WeakReference<ExoMusicService> mWeakReference;
+        private final WeakReference<MusicService> mWeakReference;
 
-        private DelayedStopHandler(ExoMusicService service) {
+        private DelayedStopHandler(MusicService service) {
             mWeakReference = new WeakReference<>(service);
         }
 
         @Override
         public void handleMessage(Message msg) {
-            ExoMusicService service = mWeakReference.get();
-            if (service != null && service.mPlaybackManager.getPlayback() != null) {
-                if (service.mPlaybackManager.getPlayback().isPlaying()) {
+            MusicService service = mWeakReference.get();
+            if (service != null && service.playbackManager.getPlayback() != null) {
+                if (service.playbackManager.getPlayback().isPlaying()) {
                     Log.d(TAG, "Ignoring delayed stop since the media player is in use.");
                     return;
                 }
@@ -432,13 +458,13 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
     private class CastSessionManagerListener implements SessionManagerListener<CastSession> {
 
         @Override
-        public void onSessionEnded(CastSession session, int error) {
+        public void onSessionEnded(CastSession castSession, int error) {
             Log.d(TAG, "onSessionEnded");
-            mSessionExtras.remove(EXTRA_CONNECTED_CAST);
-            mSession.setExtras(mSessionExtras);
-            Playback playback = new LocalPlayback(ExoMusicService.this, mMusicProvider);
-            mMediaRouter.setMediaSessionCompat(null);
-            mPlaybackManager.switchToPlayback(playback, false);
+            sessionExtras.remove(EXTRA_CONNECTED_CAST);
+            session.setExtras(sessionExtras);
+            Playback playback = new LocalPlayback(MusicService.this, musicProvider);
+            mediaRouter.setMediaSessionCompat(null);
+            playbackManager.switchToPlayback(playback, false);
         }
 
         @Override
@@ -446,15 +472,15 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
         }
 
         @Override
-        public void onSessionStarted(CastSession session, String sessionId) {
+        public void onSessionStarted(CastSession castSession, String sessionId) {
             // In case we are casting, send the device name as an extra on MediaSession metadata.
-//            mSessionExtras.putString(EXTRA_CONNECTED_CAST,
-//                    session.getCastDevice().getFriendlyName());
-//            mSession.setExtras(mSessionExtras);
-//            // Now we can switch to CastPlayback
-//            Playback playback = new CastPlayback(mMusicProvider, MusicService.this);
-//            mMediaRouter.setMediaSessionCompat(mSession);
-//            mPlaybackManager.switchToPlayback(playback, true);
+            sessionExtras.putString(EXTRA_CONNECTED_CAST,
+                    castSession.getCastDevice().getFriendlyName());
+            session.setExtras(sessionExtras);
+            // Now we can switch to CastPlayback
+            Playback playback = new CastPlayback(musicProvider, MusicService.this);
+            mediaRouter.setMediaSessionCompat(session);
+            playbackManager.switchToPlayback(playback, true);
         }
 
         @Override
@@ -471,7 +497,7 @@ public class ExoMusicService extends MediaBrowserServiceCompat implements
             // In onSessionEnded(), the underlying CastPlayback#mRemoteMediaClient
             // is disconnected and hence we update our local value of stream position
             // to the latest position.
-            mPlaybackManager.getPlayback().updateLastKnownStreamPosition();
+            playbackManager.getPlayback().updateLastKnownStreamPosition();
         }
 
         @Override

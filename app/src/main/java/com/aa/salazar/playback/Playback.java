@@ -13,16 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.simplecity.amp_library.playback.exo;
-
-import android.support.v4.media.session.PlaybackStateCompat;
-
-import com.simplecity.amp_library.playback.MusicService;
+package com.aa.salazar.playback;
 
 import static android.support.v4.media.session.MediaSessionCompat.QueueItem;
 
 /**
- * Interface representing either Local or Remote Playback. The {@link MusicService} works
+ * Interface representing either Local or Remote Playback. The {@link com.aa.salazar.MusicService} works
  * directly with an instance of the Playback object to make the various calls such as
  * play, pause etc.
  */
@@ -35,7 +31,6 @@ public interface Playback {
 
     /**
      * Stop the playback. All resources can be de-allocated by implementations here.
-     *
      * @param notifyListeners if true and a callback has been set by setCallback,
      *                        callback.onPlaybackStatusChanged will be called after changing
      *                        the state.
@@ -83,8 +78,6 @@ public interface Playback {
 
     String getCurrentMediaId();
 
-    void setVolume(float volume);
-
     int getAudioSessionId();
 
     interface Callback {
@@ -92,13 +85,12 @@ public interface Playback {
          * On current music completed.
          */
         void onCompletion();
-
         /**
          * on Playback status changed
          * Implementations can use this callback to update
          * playback state on the media sessions.
          */
-        void onPlaybackStatusChanged(@PlaybackStateCompat.State int state);
+        void onPlaybackStatusChanged(int state);
 
         /**
          * @param error to be added to the PlaybackState

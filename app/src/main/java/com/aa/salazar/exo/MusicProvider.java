@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-package com.simplecity.amp_library.playback.exo;
+package com.aa.salazar.exo;
+
+import android.content.res.Resources;
+import android.support.v4.media.MediaBrowserCompat;
+import android.support.v4.media.MediaMetadataCompat;
+
+import java.util.List;
 
 /**
  * Simple data provider for music tracks. The actual metadata source is delegated to a
@@ -328,6 +334,38 @@ public class MusicProvider {
 
     public void retrieveMediaAsync(MusicProvider.Callback callback) {
 
+    }
+
+    public Iterable<MediaMetadataCompat> getMusicsByGenre(String categoryValue) {
+        return null;
+    }
+
+    public Iterable<MediaMetadataCompat> searchMusicBySongTitle(String categoryValue) {
+        return null;
+    }
+
+    public Iterable<MediaMetadataCompat> getShuffledMusic() {
+        return null;
+    }
+
+    public MediaMetadataCompat getMusic(String musicId) {
+        return null;
+    }
+
+    public boolean isFavorite(String musicId) {
+        return false;
+    }
+
+    public void setFavorite(String musicId, boolean b) {
+
+    }
+
+    public boolean isInitialized() {
+        return false;
+    }
+
+    public List<MediaBrowserCompat.MediaItem> getChildren(String parentMediaId, Resources resources) {
+        return null;
     }
 
     public interface Callback {

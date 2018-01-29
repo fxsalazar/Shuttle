@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.simplecity.amp_library.playback.exo;
+package com.aa.salazar.exo;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.RemoteException;
+
+import com.aa.salazar.MusicService;
 
 /**
  * Keeps track of a notification and updates it automatically for a given
@@ -27,7 +29,7 @@ import android.os.RemoteException;
  * won't be killed during playback.
  */
 public class MediaNotificationManager extends BroadcastReceiver {
-    public MediaNotificationManager(ExoMusicService exoMusicService) throws RemoteException {
+    public MediaNotificationManager(MusicService exoMusicService) throws RemoteException {
 
     }
 
