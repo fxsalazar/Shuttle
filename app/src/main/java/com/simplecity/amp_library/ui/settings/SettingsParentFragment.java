@@ -28,6 +28,11 @@ import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.dagger.module.ActivityModule;
 import com.simplecity.amp_library.ui.drawer.DrawerLockManager;
 import com.simplecity.amp_library.ui.drawer.MiniPlayerLockManager;
+import com.simplecity.amp_library.ui.fragments.BaseController;
+import com.simplecity.amp_library.ui.fragments.BaseNavigationController;
+import com.simplecity.amp_library.ui.fragments.Controller;
+import com.simplecity.amp_library.ui.fragments.FragmentInfo;
+import com.simplecity.amp_library.ui.fragments.NavigationController;
 import com.simplecity.amp_library.utils.SettingsManager;
 import com.simplecity.amp_library.utils.ShuttleUtils;
 
@@ -37,11 +42,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
 import io.reactivex.disposables.Disposable;
-import test.com.androidnavigation.base.Controller;
-import test.com.androidnavigation.base.NavigationController;
-import test.com.androidnavigation.fragment.BaseController;
-import test.com.androidnavigation.fragment.BaseNavigationController;
-import test.com.androidnavigation.fragment.FragmentInfo;
+
 
 public class SettingsParentFragment extends BaseNavigationController implements
         DrawerLockManager.DrawerLock,

@@ -59,7 +59,6 @@ import butterknife.ButterKnife;
 import butterknife.Unbinder;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import test.com.androidnavigation.fragment.FragmentInfo;
 
 import static com.afollestad.aesthetic.Rx.distinctToMainThread;
 import static com.afollestad.aesthetic.Rx.onErrorLogAndRethrow;

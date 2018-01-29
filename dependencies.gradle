@@ -151,7 +151,7 @@ ext.libs = [
         // /////////////////////////////////////////////////////////////////////////
 
         // Internal navigation library
-        navigation                    : project(':libraries:navigation'),
+//        navigation                    : project(':libraries:navigation'),
         // Internal recycler adapter library
         recyclerAdapter               : project(':libraries:recycler-adapter'),
         // Multi Sheet View

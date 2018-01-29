@@ -50,9 +50,7 @@ import butterknife.ButterKnife;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
-import test.com.androidnavigation.fragment.BackPressHandler;
-import test.com.androidnavigation.fragment.BaseNavigationController;
-import test.com.androidnavigation.fragment.FragmentInfo;
+
 
 public class MainController extends BaseNavigationController implements BackPressHandler, DrawerLockController {
 
@@ -273,7 +271,7 @@ public class MainController extends BaseNavigationController implements BackPres
         }
 
         fragmentTransaction.addToBackStack(null)
-                .replace(test.com.androidnavigation.R.id.mainContainer, fragment, tag)
+                .replace(R.id.mainContainer, fragment, tag)
                 .commit();
     }
 }

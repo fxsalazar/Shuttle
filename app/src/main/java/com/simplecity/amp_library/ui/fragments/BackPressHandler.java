@@ -1,8 +1,6 @@
-package test.com.androidnavigation.fragment;
+package com.simplecity.amp_library.ui.fragments;
 
 import android.support.annotation.NonNull;
-
-import test.com.androidnavigation.base.NavigationController;
 
 /**
  * Classes which are capable of handling the Android back-button press (such as {@link android.app.Activity})

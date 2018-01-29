@@ -30,6 +30,8 @@ import com.simplecity.amp_library.sql.sqlbrite.SqlBriteUtils;
 import com.simplecity.amp_library.ui.dialog.ChangelogDialog;
 import com.simplecity.amp_library.ui.drawer.DrawerProvider;
 import com.simplecity.amp_library.ui.drawer.NavigationEventRelay;
+import com.simplecity.amp_library.ui.fragments.BackPressHandler;
+import com.simplecity.amp_library.ui.fragments.BackPressListener;
 import com.simplecity.amp_library.ui.fragments.MainController;
 import com.simplecity.amp_library.utils.AnalyticsManager;
 import com.simplecity.amp_library.utils.LogUtils;
@@ -48,8 +50,6 @@ import javax.inject.Inject;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-import test.com.androidnavigation.fragment.BackPressHandler;
-import test.com.androidnavigation.fragment.BackPressListener;
 
 public class MainActivity extends BaseCastActivity implements
         ToolbarListener,

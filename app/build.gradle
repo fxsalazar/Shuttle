@@ -250,7 +250,7 @@ dependencies {
     // External libs
     // /////////////////////////////////////////////////////////////////////////
 
-    implementation libs.navigation
+//    implementation libs.navigation
     implementation libs.recyclerAdapter
     implementation libs.multiSheetView
     implementation libs.ccl

@@ -67,7 +67,7 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function3;
 import io.reactivex.schedulers.Schedulers;
-import test.com.androidnavigation.fragment.BackPressListener;
+
 
 import static com.afollestad.aesthetic.Rx.distinctToMainThread;
 import static com.afollestad.aesthetic.Rx.onErrorLogAndRethrow;
