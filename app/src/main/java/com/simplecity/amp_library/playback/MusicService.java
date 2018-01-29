@@ -1730,7 +1730,9 @@ public class MusicService extends Service {
     private MediaSessionCompat.QueueItem songToQueueItem(Song song) {
         MediaDescriptionCompat description = new MediaDescriptionCompat
                 .Builder()
-                .setMediaUri(Uri.parse(song.path)).build();
+                .setMediaId(String.valueOf(song.id))
+                .setMediaUri(Uri.parse(song.path))
+                .build();
         return new MediaSessionCompat.QueueItem(description, song.id);
     }
 
