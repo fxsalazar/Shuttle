@@ -1,23 +1,19 @@
 package com.simplecity.amp_library.ui.activities;
 
 import android.Manifest;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.widget.Toast;
 
-import com.aa.salazar.MediaLifecycleManager;
 import com.aa.salazar.MediaBrowserManager;
+import com.aa.salazar.MediaLifecycleManager;
 import com.afollestad.aesthetic.AestheticActivity;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
@@ -28,25 +24,18 @@ import com.simplecity.amp_library.billing.BillingManager;
 import com.simplecity.amp_library.constants.Config;
 import com.simplecity.amp_library.playback.MusicService;
 import com.simplecity.amp_library.ui.dialog.UpgradeDialog;
-import com.simplecity.amp_library.utils.MusicServiceConnectionUtils;
 import com.simplecity.amp_library.utils.SettingsManager;
 
 import java.util.List;
 
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
-public abstract class BaseActivity extends AestheticActivity implements ServiceConnection, MediaLifecycleManager.Callback {
-
-    @Nullable
-    private MusicServiceConnectionUtils.ServiceToken token;
+public abstract class BaseActivity extends AestheticActivity implements MediaLifecycleManager.Callback {
 
     @Nullable
     private BillingManager billingManager;
 
     private MediaBrowserManager mediaBrowserManager;
-    private MediaControllerCompat.Callback mediaControllerCallback = new MediaControllerCompat.Callback() {
-
-    };
 
 
     @CallSuper
@@ -59,8 +48,7 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
             @Override
             public void onPermissionResult(Permiso.ResultSet resultSet) {
                 if (resultSet.areAllPermissionsGranted()) {
-                    bindService();
-                    MediaLifecycleManager.bind(
+                    mediaBrowserManager = MediaLifecycleManager.bind(
                             BaseActivity.this,
                             BaseActivity.this,
                             com.aa.salazar.MusicService.class);
@@ -108,10 +96,6 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
         keepScreenOn(SettingsManager.getInstance().keepScreenOn());
         super.onResume();
 
-        if (token == null) {
-            bindService();
-        }
-
         Permiso.getInstance().setActivity(this);
 
         if (billingManager != null && billingManager.getBillingClientResponseCode() == BillingClient.BillingResponse.OK) {
@@ -127,8 +111,6 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
 
     @Override
     protected void onDestroy() {
-        unbindService();
-
         if (billingManager != null) {
             billingManager.destroy();
         }
@@ -139,28 +121,6 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
     @Nullable
     public BillingManager getBillingManager() {
         return billingManager;
-    }
-
-    void bindService() {
-        token = MusicServiceConnectionUtils.bindToService(this, this);
-    }
-
-    void unbindService() {
-        if (token != null) {
-            MusicServiceConnectionUtils.unbindFromService(token);
-            token = null;
-        }
-    }
-
-    @Override
-    @CallSuper
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        sendBroadcast(new Intent(MusicService.InternalIntents.SERVICE_CONNECTED));
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-        unbindService();
     }
 
     @Override
@@ -194,18 +154,18 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
     protected abstract String screenName();
 
     @Override
-    public void onConnected() {
-        onMediaManagerConnected();
-    }
-
-    protected void onMediaManagerConnected() {
+    @CallSuper
+    public void onMediaManagerConnected() {
+        sendBroadcast(new Intent(MusicService.InternalIntents.SERVICE_CONNECTED));
     }
 
     @Override
-    public void onError(@NonNull Exception exception) {
-        onMediaManagerError(exception);
+    @CallSuper
+    public void onMediaManagerConnectionError(@NonNull Exception exception) {
     }
 
-    protected void onMediaManagerError(@NonNull Exception exception) {
+    @Override
+    @CallSuper
+    public void onMediaManagerConnectionSuspended() {
     }
 }

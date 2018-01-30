@@ -36,11 +36,21 @@ public final class MediaLifecycleManager implements LifecycleObserver, MediaBrow
                 public void onConnected() {
                     try {
                         connectToSession(mediaBrowser.getSessionToken());
-                        mediaManagerCallback.onConnected();
+                        mediaManagerCallback.onMediaManagerConnected();
                     } catch (RemoteException e) {
                         Log.e(TAG, "could not connect media controller", e);
-                        mediaManagerCallback.onError(new Exception("could not connect media controller", e));
+                        mediaManagerCallback.onMediaManagerConnectionError(new Exception("could not connect media controller", e));
                     }
+                }
+
+                @Override
+                public void onConnectionSuspended() {
+                    mediaManagerCallback.onMediaManagerConnectionSuspended();
+                }
+
+                @Override
+                public void onConnectionFailed() {
+                    mediaManagerCallback.onMediaManagerConnectionError(new Exception("MediaBrowser connection FAILED"));
                 }
             };
     private Class<? extends MediaBrowserServiceCompat> mediaServiceClass;
@@ -110,8 +120,10 @@ public final class MediaLifecycleManager implements LifecycleObserver, MediaBrow
     }
 
     public interface Callback {
-        void onConnected();
+        void onMediaManagerConnected();
 
-        void onError(@NonNull Exception exception);
+        void onMediaManagerConnectionSuspended();
+
+        void onMediaManagerConnectionError(@NonNull Exception exception);
     }
 }

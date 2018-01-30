@@ -1,10 +1,8 @@
 package com.simplecity.amp_library.search;
 
 import android.app.SearchManager;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.widget.Toast;
 
 import com.annimon.stream.Stream;
@@ -45,15 +43,11 @@ public class VoiceSearchActivity extends BaseActivity {
     }
 
     @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        super.onServiceConnected(name, service);
+    public void onMediaManagerConnected() {
+        super.onMediaManagerConnected();
         if (intent != null && intent.getAction() != null && intent.getAction().equals("android.media.action.MEDIA_PLAY_FROM_SEARCH")) {
             searchAndPlaySongs();
         }
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
     }
 
     private void searchAndPlaySongs() {

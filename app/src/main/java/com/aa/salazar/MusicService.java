@@ -25,6 +25,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaDescriptionCompat;
@@ -148,6 +149,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
     private SessionManagerListener<CastSession> castSessionManagerListener;
 
     private boolean isConnectedToCar;
+    @Nullable
     private BroadcastReceiver carConnectionReceiver;
 
     /*
@@ -280,6 +282,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
         stopSelf();
     }
 
+
     /**
      * (non-Javadoc)
      *
@@ -339,11 +342,11 @@ public class MusicService extends MediaBrowserServiceCompat implements
     }
 
     @Override
-    public void onLoadItem(String iteid, @NonNull Result<MediaItem> result) {
+    public void onLoadItem(String itemId, @NonNull Result<MediaItem> result) {
         MediaDescriptionCompat description = new MediaDescriptionCompat
                 .Builder()
-                .setMediaId(iteid)
-                .setTitle(iteid)
+                .setMediaId(itemId)
+                .setTitle(itemId)
                 .build();
         result.sendResult(new MediaItem(description, MediaItem.FLAG_BROWSABLE));
     }
@@ -424,7 +427,9 @@ public class MusicService extends MediaBrowserServiceCompat implements
     }
 
     private void unregisterCarConnectionReceiver() {
-        unregisterReceiver(carConnectionReceiver);
+        if (carConnectionReceiver != null) {
+            unregisterReceiver(carConnectionReceiver);
+        }
     }
 
     /**

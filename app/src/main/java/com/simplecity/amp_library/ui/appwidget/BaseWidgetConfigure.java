@@ -1,13 +1,11 @@
 package com.simplecity.amp_library.ui.appwidget;
 
 import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
@@ -263,9 +261,9 @@ public abstract class BaseWidgetConfigure extends BaseActivity implements
     }
 
     @Override
-    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+    public void onMediaManagerConnected() {
+        super.onMediaManagerConnected();
         updateWidgetUI();
-        super.onServiceConnected(componentName, iBinder);
     }
 
     private class WidgetPagerAdapter extends FragmentStatePagerAdapter {
