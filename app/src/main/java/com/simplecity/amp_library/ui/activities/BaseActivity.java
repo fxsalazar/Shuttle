@@ -16,7 +16,7 @@ import android.view.KeyEvent;
 import android.view.Window;
 import android.widget.Toast;
 
-import com.aa.salazar.MediaBrowserLifecycleManager;
+import com.aa.salazar.MediaLifecycleManager;
 import com.aa.salazar.MediaBrowserManager;
 import com.afollestad.aesthetic.AestheticActivity;
 import com.android.billingclient.api.BillingClient;
@@ -35,7 +35,7 @@ import java.util.List;
 
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
-public abstract class BaseActivity extends AestheticActivity implements ServiceConnection, MediaBrowserLifecycleManager.Callback {
+public abstract class BaseActivity extends AestheticActivity implements ServiceConnection, MediaLifecycleManager.Callback {
 
     @Nullable
     private MusicServiceConnectionUtils.ServiceToken token;
@@ -45,8 +45,8 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
 
     private MediaBrowserManager mediaBrowserManager;
     private MediaControllerCompat.Callback mediaControllerCallback = new MediaControllerCompat.Callback() {
-    };
 
+    };
 
 
     @CallSuper
@@ -60,11 +60,9 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
             public void onPermissionResult(Permiso.ResultSet resultSet) {
                 if (resultSet.areAllPermissionsGranted()) {
                     bindService();
-                    MediaBrowserLifecycleManager.bind(
+                    MediaLifecycleManager.bind(
                             BaseActivity.this,
                             BaseActivity.this,
-                            BaseActivity.this,
-                            mediaControllerCallback,
                             com.aa.salazar.MusicService.class);
                 } else {
                     Toast.makeText(BaseActivity.this, "Permission check failed", Toast.LENGTH_LONG).show();
@@ -196,12 +194,18 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
     protected abstract String screenName();
 
     @Override
-    public void onConnected(MediaControllerCompat mediaControllerCompat) {
+    public void onConnected() {
+        onMediaManagerConnected();
+    }
 
+    protected void onMediaManagerConnected() {
     }
 
     @Override
-    public void onError(Exception exception) {
+    public void onError(@NonNull Exception exception) {
+        onMediaManagerError(exception);
+    }
 
+    protected void onMediaManagerError(@NonNull Exception exception) {
     }
 }

@@ -20,17 +20,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
-import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 
 import com.aa.salazar.MusicService;
 import com.aa.salazar.exo.MusicProvider;
-import com.aa.salazar.exo.MusicProviderSource;
 import com.aa.salazar.utils.LogHelper;
-import com.aa.salazar.utils.MediaIDHelper;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.PlaybackParameters;
@@ -195,15 +191,15 @@ public final class LocalPlayback implements Playback {
 
         if (mediaHasChanged || exoPlayer == null) {
             releaseResources(false); // release everything except the player
-            MediaMetadataCompat track =
-                    musicProvider.getMusic(
-                            MediaIDHelper.extractMusicIDFromMediaID(
-                                    item.getDescription().getMediaId()));
-
-            String source = track.getString(MusicProviderSource.CUSTOM_METADATA_TRACK_SOURCE);
-            if (source != null) {
-                source = source.replaceAll(" ", "%20"); // Escape spaces for URLs
-            }
+//            MediaMetadataCompat track =
+//                    musicProvider.getMusic(
+//                            MediaIDHelper.extractMusicIDFromMediaID(
+//                                    item.getDescription().getMediaId()));
+//
+//            String source = track.getString(MusicProviderSource.CUSTOM_METADATA_TRACK_SOURCE);
+//            if (source != null) {
+//                source = source.replaceAll(" ", "%20"); // Escape spaces for URLs
+//            }
 
             if (exoPlayer == null) {
                 exoPlayer =
@@ -232,7 +228,7 @@ public final class LocalPlayback implements Playback {
             // The MediaSource represents the media to be played.
             MediaSource mediaSource =
                     new ExtractorMediaSource(
-                            Uri.parse(source), dataSourceFactory, extractorsFactory, null, null);
+                            item.getDescription().getMediaUri(), dataSourceFactory, extractorsFactory, null, null);
 
             // Prepares media to play (happens on background thread) and triggers
             // {@code onPlayerStateChanged} callback when the stream is ready to play.
