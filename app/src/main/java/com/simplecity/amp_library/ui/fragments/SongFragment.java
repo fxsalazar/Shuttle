@@ -3,7 +3,6 @@ package com.simplecity.amp_library.ui.fragments;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
@@ -291,17 +290,11 @@ public class SongFragment extends BaseFragment implements
                     .map(adaptableItem -> ((SongView) adaptableItem).song)
                     .toList();
 
-            Song song = songs.get(0);
-            MediaDescriptionCompat description = new MediaDescriptionCompat
-                    .Builder()
-                    .setMediaId(String.valueOf(song.id))
-                    .setMediaUri(Uri.parse(song.path))
-                    .build();
+            MediaControllerCompat.getMediaController(getActivity())
+                    .getTransportControls()
+                    .playFromUri(Uri.parse(songs.get(0).path), null);
 
-            MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(getActivity());
-            mediaController.getTransportControls().playFromUri(description.getMediaUri(), null);
-//            mediaController.getTransportControls().playFromUri(description.getMediaUri(), null);
-
+            // TODO: 31/01/2018   implement proper playAll
 //            MusicUtils.playAll(songs, songs.indexOf(songView.song), true, (String message) ->
 //                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
         }

@@ -22,6 +22,7 @@ import java.util.Random;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 
+@Deprecated
 public class MusicUtils {
 
     private static final String TAG = "MusicUtils";

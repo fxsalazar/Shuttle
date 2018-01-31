@@ -8,7 +8,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -126,8 +125,6 @@ public class MainActivity extends BaseCastActivity implements
     public void onMediaManagerConnected() {
         super.onMediaManagerConnected();
         handlePendingPlaybackRequest();
-        MediaControllerCompat med = MediaControllerCompat.getMediaController(this);
-        med.getMediaController();
     }
 
     @Override
