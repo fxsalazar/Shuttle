@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
@@ -226,9 +227,11 @@ public final class LocalPlayback implements Playback {
             // Produces Extractor instances for parsing the media data.
             ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
             // The MediaSource represents the media to be played.
+
+            Uri mediaUri = item.getDescription().getMediaUri();
             MediaSource mediaSource =
                     new ExtractorMediaSource(
-                            item.getDescription().getMediaUri(), dataSourceFactory, extractorsFactory, null, null);
+                            mediaUri, dataSourceFactory, extractorsFactory, null, null);
 
             // Prepares media to play (happens on background thread) and triggers
             // {@code onPlayerStateChanged} callback when the stream is ready to play.

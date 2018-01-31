@@ -292,7 +292,7 @@ public class SongFragment extends BaseFragment implements
 
             MediaControllerCompat.getMediaController(getActivity())
                     .getTransportControls()
-                    .playFromUri(Uri.parse(songs.get(0).path), null);
+                    .playFromUri(Uri.parse(songs.get(position - 1).path), null);
 
             // TODO: 31/01/2018   implement proper playAll
 //            MusicUtils.playAll(songs, songs.indexOf(songView.song), true, (String message) ->

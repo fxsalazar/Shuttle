@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.v4.media.MediaDescriptionCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 
@@ -38,7 +39,7 @@ public class PlaybackManager implements Playback.Callback {
 
     private static final String TAG = LogHelper.makeLogTag(PlaybackManager.class);
     // Action to thumbs up a media item
-    private static final String CUSTOM_ACTION_THUMBS_UP = "com.example.android.uamp.THUMBS_UP";
+    private static final String CUSTOM_ACTION_THUMBS_UP = "com.shuttle.THUMBS_UP";
 
     private MusicProvider musicProvider;
     private QueueManager queueManager;
@@ -47,8 +48,10 @@ public class PlaybackManager implements Playback.Callback {
     private PlaybackServiceCallback serviceCallback;
     private MediaSessionCallback mediaSessionCallback;
 
-    public PlaybackManager(PlaybackServiceCallback serviceCallback, Resources resources,
-                           MusicProvider musicProvider, QueueManager queueManager,
+    public PlaybackManager(PlaybackServiceCallback serviceCallback,
+                           Resources resources,
+                           MusicProvider musicProvider,
+                           QueueManager queueManager,
                            Playback playback) {
         this.musicProvider = musicProvider;
         this.serviceCallback = serviceCallback;
@@ -302,6 +305,12 @@ public class PlaybackManager implements Playback.Callback {
                     .setMediaUri(uri)
                     .build();
             MediaSessionCompat.QueueItem qi = new MediaSessionCompat.QueueItem(description, 99);
+            MediaMetadataCompat metadata = new MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ARTIST, "Jay-Z")
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Title")
+                    .build();
+            queueManager.listener.onMetadataChanged(metadata);
+            serviceCallback.onPlaybackStart();
             playback.play(qi);
         }
 

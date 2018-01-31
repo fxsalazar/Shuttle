@@ -29,6 +29,7 @@ public final class MediaLifecycleManager implements LifecycleObserver, MediaBrow
     private final Callback mediaManagerCallback;
     @Nullable
     private MediaControllerCompat.Callback mediaControllerCallback;
+    private Class<? extends MediaBrowserServiceCompat> mediaServiceClass;
 
     private final MediaBrowserCompat.ConnectionCallback connectionCallback =
             new MediaBrowserCompat.ConnectionCallback() {
@@ -53,7 +54,6 @@ public final class MediaLifecycleManager implements LifecycleObserver, MediaBrow
                     mediaManagerCallback.onMediaManagerConnectionError(new Exception("MediaBrowser connection FAILED"));
                 }
             };
-    private Class<? extends MediaBrowserServiceCompat> mediaServiceClass;
 
     public static MediaBrowserManager bind(@NonNull FragmentActivity activity,
                                            @NonNull Callback mediaBrowserLifecycleManagerCallback,
