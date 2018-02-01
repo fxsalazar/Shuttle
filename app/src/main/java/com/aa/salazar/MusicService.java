@@ -64,7 +64,7 @@ import static com.aa.salazar.utils.MediaIDHelper.MEDIA_ID_ROOT;
  * client, through the onGetRoot and onLoadChildren methods. It also creates a MediaSession and
  * exposes it through its MediaSession.Token, which allows the client to create a MediaController
  * that connects to and send control commands to the MediaSession remotely. This is useful for
- * user interfaces that need to interact with your media session, like Android Auto. You can
+ * user interfaces that need to interact with your media mediaSession, like Android Auto. You can
  * (should) also use the same service from your app's UI, which gives a seamless playback
  * experience to the user.
  * <p>
@@ -76,7 +76,7 @@ import static com.aa.salazar.utils.MediaIDHelper.MEDIA_ID_ROOT;
  * related methods {@link android.service.media.MediaBrowserService#onGetRoot} and
  * {@link android.service.media.MediaBrowserService#onLoadChildren};
  * <li> In onCreate, start a new {@link android.media.session.MediaSession} and notify its parent
- * with the session's token {@link android.service.media.MediaBrowserService#setSessionToken};
+ * with the mediaSession's token {@link android.service.media.MediaBrowserService#setSessionToken};
  * <p>
  * <li> Set a callback on the
  * {@link android.media.session.MediaSession#setCallback(android.media.session.MediaSession.Callback)}.
@@ -139,7 +139,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
     private MusicProvider musicProvider;
     private PlaybackManager playbackManager;
 
-    private MediaSessionCompat session;
+    private MediaSessionCompat mediaSession;
     private MediaNotificationManager mediaNotificationManager;
     private Bundle sessionExtras;
     private final DelayedStopHandler delayedStopHandler = new DelayedStopHandler(this);
@@ -174,7 +174,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
                 new QueueManager.MetadataUpdateListener() {
                     @Override
                     public void onMetadataChanged(MediaMetadataCompat metadata) {
-                        session.setMetadata(metadata);
+                        mediaSession.setMetadata(metadata);
                     }
 
                     @Override
@@ -191,8 +191,8 @@ public class MusicService extends MediaBrowserServiceCompat implements
                     @Override
                     public void onQueueUpdated(String title,
                                                List<MediaSessionCompat.QueueItem> newQueue) {
-                        session.setQueue(newQueue);
-                        session.setQueueTitle(title);
+                        mediaSession.setQueue(newQueue);
+                        mediaSession.setQueueTitle(title);
                     }
                 });
 
@@ -205,24 +205,24 @@ public class MusicService extends MediaBrowserServiceCompat implements
                 playback);
 
         // Start a new MediaSession
-        session = new MediaSessionCompat(this, "MusicService");
-        setSessionToken(session.getSessionToken());
-        session.setCallback(playbackManager.getMediaSessionCallback());
-        session.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
+        mediaSession = new MediaSessionCompat(this, "MusicService");
+        setSessionToken(mediaSession.getSessionToken());
+        mediaSession.setCallback(playbackManager.getMediaSessionCallback());
+        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
                 MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
         Context context = getApplicationContext();
         Intent intent = new Intent(context, ShortcutTrampolineActivity.class);
         PendingIntent pi = PendingIntent.getActivity(context, 99 /*request code*/,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        session.setSessionActivity(pi);
+        mediaSession.setSessionActivity(pi);
 
         sessionExtras = new Bundle();
         // TODO: 29/01/2018 setub car and wear helpers
 //        CarHelper.setSlotReservationFlags(sessionExtras, true, true, true);
 //        WearHelper.setSlotReservationFlags(sessionExtras, true, true);
 //        WearHelper.setUseBackgroundFromTheme(sessionExtras, true);
-        session.setExtras(sessionExtras);
+        mediaSession.setExtras(sessionExtras);
 
         playbackManager.updatePlaybackState(null);
 
@@ -266,7 +266,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
                 }
             } else {
                 // Try to handle the intent as a media button event wrapped by MediaButtonReceiver
-                MediaButtonReceiver.handleIntent(session, startIntent);
+                MediaButtonReceiver.handleIntent(mediaSession, startIntent);
             }
         }
         // Reset the delay handler to enqueue a message to stop the service if
@@ -306,7 +306,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
         }
 
         delayedStopHandler.removeCallbacksAndMessages(null);
-        session.release();
+        mediaSession.release();
     }
 
     @Override
@@ -381,7 +381,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
      */
     @Override
     public void onPlaybackStart() {
-        session.setActive(true);
+        mediaSession.setActive(true);
 
         delayedStopHandler.removeCallbacksAndMessages(null);
 
@@ -397,7 +397,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
      */
     @Override
     public void onPlaybackStop() {
-        session.setActive(false);
+        mediaSession.setActive(false);
         // Reset the delayed stop handler, so after STOP_DELAY it will be executed again,
         // potentially stopping the service.
         delayedStopHandler.removeCallbacksAndMessages(null);
@@ -412,7 +412,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
 
     @Override
     public void onPlaybackStateUpdated(PlaybackStateCompat newState) {
-        session.setPlaybackState(newState);
+        mediaSession.setPlaybackState(newState);
     }
 
     private void registerCarConnectionReceiver() {
@@ -470,7 +470,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
         public void onSessionEnded(CastSession castSession, int error) {
             Log.d(TAG, "onSessionEnded");
             sessionExtras.remove(EXTRA_CONNECTED_CAST);
-            session.setExtras(sessionExtras);
+            mediaSession.setExtras(sessionExtras);
             Playback playback = new LocalPlayback(MusicService.this, musicProvider);
             mediaRouter.setMediaSessionCompat(null);
             playbackManager.switchToPlayback(playback, false);
@@ -485,10 +485,10 @@ public class MusicService extends MediaBrowserServiceCompat implements
             // In case we are casting, send the device name as an extra on MediaSession metadata.
             sessionExtras.putString(EXTRA_CONNECTED_CAST,
                     castSession.getCastDevice().getFriendlyName());
-            session.setExtras(sessionExtras);
+            mediaSession.setExtras(sessionExtras);
             // Now we can switch to CastPlayback
             Playback playback = new CastPlayback(musicProvider, MusicService.this);
-            mediaRouter.setMediaSessionCompat(session);
+            mediaRouter.setMediaSessionCompat(mediaSession);
             playbackManager.switchToPlayback(playback, true);
         }
 
