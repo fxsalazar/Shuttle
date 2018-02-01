@@ -80,7 +80,6 @@ public final class LocalPlayback implements Playback {
     private String currentMediaId;
 
     private int currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-    private final AudioManager audioManager;
     private SimpleExoPlayer exoPlayer;
     private final ExoPlayerEventListener eventListener = new ExoPlayerEventListener();
 
@@ -110,9 +109,6 @@ public final class LocalPlayback implements Playback {
         Context applicationContext = context.getApplicationContext();
         this.context = applicationContext;
         this.musicProvider = musicProvider;
-
-        this.audioManager =
-                (AudioManager) applicationContext.getSystemService(Context.AUDIO_SERVICE);
         // Create the Wifi lock (this does not acquire the lock, this just creates it)
         this.wifiLock =
                 ((WifiManager) applicationContext.getSystemService(Context.WIFI_SERVICE))
@@ -126,7 +122,6 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public void stop(boolean notifyListeners) {
-        giveUpAudioFocus();
         unregisterAudioNoisyReceiver();
         releaseResources(true);
     }
@@ -182,7 +177,6 @@ public final class LocalPlayback implements Playback {
     @Override
     public void play(QueueItem item) {
         playOnFocusGain = true;
-        tryToGetAudioFocus();
         registerAudioNoisyReceiver();
         String mediaId = item.getDescription().getMediaId();
         boolean mediaHasChanged = !TextUtils.equals(mediaId, currentMediaId);
@@ -247,6 +241,12 @@ public final class LocalPlayback implements Playback {
     }
 
     @Override
+    public void play() {
+        playOnFocusGain = true;
+        configurePlayerState();
+    }
+
+    @Override
     public void pause() {
         // Pause player and cancel the 'foreground service' state.
         if (exoPlayer != null) {
@@ -291,28 +291,6 @@ public final class LocalPlayback implements Playback {
         exoPlayer.setVolume(volume);
     }
 
-    private void tryToGetAudioFocus() {
-        LogHelper.d(TAG, "tryToGetAudioFocus");
-        int result =
-                audioManager.requestAudioFocus(
-                        mOnAudioFocusChangeListener,
-                        AudioManager.STREAM_MUSIC,
-                        AudioManager.AUDIOFOCUS_GAIN);
-        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            currentAudioFocusState = AUDIO_FOCUSED;
-        } else {
-            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-        }
-    }
-
-    private void giveUpAudioFocus() {
-        LogHelper.d(TAG, "giveUpAudioFocus");
-        if (audioManager.abandonAudioFocus(mOnAudioFocusChangeListener)
-                == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-        }
-    }
-
     /**
      * Reconfigures the player according to audio focus settings and starts/restarts it. This method
      * starts/restarts the ExoPlayer instance respecting the current audio focus state. So if we
@@ -342,38 +320,6 @@ public final class LocalPlayback implements Playback {
             }
         }
     }
-
-    private final AudioManager.OnAudioFocusChangeListener mOnAudioFocusChangeListener =
-            new AudioManager.OnAudioFocusChangeListener() {
-                @Override
-                public void onAudioFocusChange(int focusChange) {
-                    LogHelper.d(TAG, "onAudioFocusChange. focusChange=", focusChange);
-                    switch (focusChange) {
-                        case AudioManager.AUDIOFOCUS_GAIN:
-                            currentAudioFocusState = AUDIO_FOCUSED;
-                            break;
-                        case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                            // Audio focus was lost, but it's possible to duck (i.e.: play quietly)
-                            currentAudioFocusState = AUDIO_NO_FOCUS_CAN_DUCK;
-                            break;
-                        case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                            // Lost audio focus, but will gain it back (shortly), so note whether
-                            // playback should resume
-                            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-                            playOnFocusGain = exoPlayer != null && exoPlayer.getPlayWhenReady();
-                            break;
-                        case AudioManager.AUDIOFOCUS_LOSS:
-                            // Lost audio focus, probably "permanently"
-                            currentAudioFocusState = AUDIO_NO_FOCUS_NO_DUCK;
-                            break;
-                    }
-
-                    if (exoPlayer != null) {
-                        // Update the player state based on the change
-                        configurePlayerState();
-                    }
-                }
-            };
 
     /**
      * Releases resources used by the service for playback, which is mostly just the WiFi lock for

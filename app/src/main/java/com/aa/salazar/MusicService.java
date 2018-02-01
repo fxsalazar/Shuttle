@@ -36,6 +36,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.media.MediaRouter;
 import android.util.Log;
 
+import com.aa.salazar.exo.DefaultAudioPlaybackController;
 import com.aa.salazar.exo.MediaNotificationManager;
 import com.aa.salazar.exo.MusicProvider;
 import com.aa.salazar.playback.CastPlayback;
@@ -44,6 +45,7 @@ import com.aa.salazar.playback.Playback;
 import com.aa.salazar.playback.PlaybackManager;
 import com.aa.salazar.playback.QueueManager;
 import com.aa.salazar.utils.LogHelper;
+import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.SessionManager;
@@ -217,12 +219,14 @@ public class MusicService extends MediaBrowserServiceCompat implements
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);
         mediaSession.setSessionActivity(pi);
 
-        sessionExtras = new Bundle();
         // TODO: 29/01/2018 setub car and wear helpers
+//        sessionExtras = new Bundle();
 //        CarHelper.setSlotReservationFlags(sessionExtras, true, true, true);
 //        WearHelper.setSlotReservationFlags(sessionExtras, true, true);
 //        WearHelper.setUseBackgroundFromTheme(sessionExtras, true);
-        mediaSession.setExtras(sessionExtras);
+//        mediaSession.setExtras(sessionExtras);
+
+        MediaSessionConnector me = new MediaSessionConnector(mediaSession, new DefaultAudioPlaybackController(this, mediaSession, mediaNotificationManager, playback));
 
         playbackManager.updatePlaybackState(null);
 

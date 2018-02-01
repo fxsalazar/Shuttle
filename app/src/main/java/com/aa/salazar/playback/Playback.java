@@ -70,6 +70,8 @@ public interface Playback {
 
     void play(QueueItem item);
 
+    void play();
+
     void pause();
 
     void seekTo(long position);
