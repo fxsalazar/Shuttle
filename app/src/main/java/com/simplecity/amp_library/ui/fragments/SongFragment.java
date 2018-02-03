@@ -1,6 +1,5 @@
 package com.simplecity.amp_library.ui.fragments;
 
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -292,7 +291,8 @@ public class SongFragment extends BaseFragment implements
 
             MediaControllerCompat.getMediaController(getActivity())
                     .getTransportControls()
-                    .playFromUri(Uri.parse(songs.get(position - 1).path), null);
+                    .play();
+//                    .playFromUri(Uri.parse(songs.get(position - 1).path), null);
 
             // TODO: 31/01/2018   implement proper playAll
 //            MusicUtils.playAll(songs, songs.indexOf(songView.song), true, (String message) ->

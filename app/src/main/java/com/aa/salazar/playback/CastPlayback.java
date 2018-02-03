@@ -121,6 +121,11 @@ public class CastPlayback implements Playback {
     }
 
     @Override
+    public void play() {
+        // TODO: 02/02/2018 implement
+    }
+
+    @Override
     public void pause() {
         try {
             if (mRemoteMediaClient.hasMediaSession()) {
@@ -178,6 +183,21 @@ public class CastPlayback implements Playback {
     @Override
     public void setVolume(float volume) {
         mRemoteMediaClient.setStreamVolume(volume);
+    }
+
+    @Override
+    public void unDuckVolume() {
+
+    }
+
+    @Override
+    public void duckVolume() {
+
+    }
+
+    @Override
+    public void pauseAndDelayedStop() {
+
     }
 
     @Override

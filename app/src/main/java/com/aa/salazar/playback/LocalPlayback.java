@@ -291,6 +291,21 @@ public final class LocalPlayback implements Playback {
         exoPlayer.setVolume(volume);
     }
 
+    @Override
+    public void unDuckVolume() {
+
+    }
+
+    @Override
+    public void duckVolume() {
+
+    }
+
+    @Override
+    public void pauseAndDelayedStop() {
+
+    }
+
     /**
      * Reconfigures the player according to audio focus settings and starts/restarts it. This method
      * starts/restarts the ExoPlayer instance respecting the current audio focus state. So if we

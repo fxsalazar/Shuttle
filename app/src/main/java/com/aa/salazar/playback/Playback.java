@@ -31,6 +31,7 @@ public interface Playback {
 
     /**
      * Stop the playback. All resources can be de-allocated by implementations here.
+     *
      * @param notifyListeners if true and a callback has been set by setCallback,
      *                        callback.onPlaybackStatusChanged will be called after changing
      *                        the state.
@@ -84,11 +85,18 @@ public interface Playback {
 
     void setVolume(float volume);
 
+    void unDuckVolume();
+
+    void duckVolume();
+
+    void pauseAndDelayedStop();
+
     interface Callback {
         /**
          * On current music completed.
          */
         void onCompletion();
+
         /**
          * on Playback status changed
          * Implementations can use this callback to update
