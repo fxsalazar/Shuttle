@@ -55,7 +55,7 @@ class DetailPresenter extends Presenter<DetailView> {
     }
 
     void fabClicked() {
-        MusicUtils.shuffleAll(songsProvider.getSongs(), message -> {
+        MusicUtils.shuffleAll(null, songsProvider.getSongs(), message -> {
             DetailView detailView = getView();
             if (detailView != null) {
                 detailView.showToast(message);
@@ -64,7 +64,7 @@ class DetailPresenter extends Presenter<DetailView> {
     }
 
     void playAll() {
-        MusicUtils.playAll(songsProvider.getSongs(), message -> {
+        MusicUtils.playAll(null, songsProvider.getSongs(), message -> {
             DetailView detailView = getView();
             if (detailView != null) {
                 detailView.showToast(message);

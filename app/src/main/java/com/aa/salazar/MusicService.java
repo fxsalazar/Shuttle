@@ -20,18 +20,15 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
-import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaDescriptionCompat;
-import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -41,30 +38,25 @@ import android.util.Log;
 
 import com.aa.salazar.exo.AudioFocusManager;
 import com.aa.salazar.exo.DefaultAudioPlaybackController;
+import com.aa.salazar.exo.DefaultAudioPlaybackPreparerController;
+import com.aa.salazar.exo.DefaultQueueEditor;
+import com.aa.salazar.exo.DefaultQueueNavigator;
+import com.aa.salazar.exo.DontBeNoisyBroadcastReceiver;
 import com.aa.salazar.exo.MediaNotificationManager;
 import com.aa.salazar.exo.MusicProvider;
+import com.aa.salazar.exo.ShuttleExoPlayer;
+import com.aa.salazar.exo.ShuttlePlayer;
 import com.aa.salazar.playback.CastPlayback;
 import com.aa.salazar.playback.LocalPlayback;
 import com.aa.salazar.playback.Playback;
-import com.aa.salazar.playback.PlaybackManager;
-import com.aa.salazar.playback.QueueManager;
 import com.aa.salazar.utils.LogHelper;
 import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.extractor.ExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
-import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.ui.activities.ShortcutTrampolineActivity;
 
 import java.lang.ref.WeakReference;
@@ -74,11 +66,9 @@ import java.util.List;
 import static com.aa.salazar.utils.MediaIDHelper.MEDIA_ID_EMPTY_ROOT;
 import static com.aa.salazar.utils.MediaIDHelper.MEDIA_ID_ROOT;
 
-public class MusicService extends MediaBrowserServiceCompat implements
-        PlaybackManager.PlaybackServiceCallback {
+public class MusicService extends MediaBrowserServiceCompat {
 
     private static final String TAG = MusicService.class.getSimpleName();
-
     // Extra on MediaSession that contains the Cast device name currently connected to
     public static final String EXTRA_CONNECTED_CAST = "com.shuttle.CAST_NAME";
     // The action of the incoming Intent indicating that it contains a command
@@ -88,17 +78,15 @@ public class MusicService extends MediaBrowserServiceCompat implements
     // should be executed (see {@link #onStartCommand})
     public static final String CMD_NAME = "CMD_NAME";
     // A value of a CMD_NAME key in the extras of the incoming Intent that
-    // indicates that the music playback should be paused (see {@link #onStartCommand})
+    // indicates that the music player should be paused (see {@link #onStartCommand})
     public static final String CMD_PAUSE = "CMD_PAUSE";
-    // A value of a CMD_NAME key that indicates that the music playback should switch
-    // to local playback from cast playback.
+    // A value of a CMD_NAME key that indicates that the music player should switch
+    // to local player from cast player.
     public static final String CMD_STOP_CASTING = "CMD_STOP_CASTING";
     // Delay stopSelf by using a handler.
     private static final int STOP_DELAY = 30000;
 
     private MusicProvider musicProvider;
-    private PlaybackManager playbackManager;
-
     private MediaSessionCompat mediaSession;
     private MediaNotificationManager mediaNotificationManager;
     private Bundle sessionExtras;
@@ -107,18 +95,18 @@ public class MusicService extends MediaBrowserServiceCompat implements
     private PackageValidator packageValidator;
     private SessionManager castSessionManager;
     private SessionManagerListener<CastSession> castSessionManagerListener;
-
+    private ShuttleExoPlayer player;
+    private MediaSessionConnector mediaSessionConnector;
     private boolean isConnectedToCar;
     @Nullable
     private BroadcastReceiver carConnectionReceiver;
+    private ArrayList<MediaSessionCompat.QueueItem> queue = new ArrayList<>();
     private final AudioFocusManager.ListenerCallback audioFocusManagerListenerCallback = new AudioFocusManager.ListenerCallback() {
-
-
         @Override
         public void continuePlaybackOrUnDuckVolume() {
             MediaControllerCompat mediaSessionController = mediaSession.getController();
             if (mediaSessionController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
-                playback.unDuckVolume();
+                player.unDuckVolume();
             } else {
                 mediaSessionController.getTransportControls().play();
             }
@@ -126,7 +114,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
 
         @Override
         public void duckVolume() {
-            playback.duckVolume();
+            player.duckVolume();
         }
 
         @Override
@@ -140,8 +128,6 @@ public class MusicService extends MediaBrowserServiceCompat implements
             delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
         }
     };
-    private Playback playback;
-    private MediaSessionConnector mediaSessionConnector;
 
     /*
      * (non-Javadoc)
@@ -152,125 +138,32 @@ public class MusicService extends MediaBrowserServiceCompat implements
         super.onCreate();
         Log.d(TAG, "onCreate");
 
-        musicProvider = new MusicProvider();
-
-        // To make the app more responsive, fetch and cache catalog information now.
-        // This can help improve the response time in the method
-        // {@link #onLoadChildren(String, Result<List<MediaItem>>) onLoadChildren()}.
-        musicProvider.retrieveMediaAsync(null /* Callback */);
-
         packageValidator = new PackageValidator(this);
 
-        QueueManager queueManager = new QueueManager(musicProvider, getResources(),
-                new QueueManager.MetadataUpdateListener() {
-                    @Override
-                    public void onMetadataChanged(MediaMetadataCompat metadata) {
-                        mediaSession.setMetadata(metadata);
-                    }
+        // Start a new MediaSession
+        mediaSession = new MediaSessionCompat(this, "MusicService");
+        mediaSession.setQueue(queue);
+        setSessionToken(mediaSession.getSessionToken());
 
-                    @Override
-                    public void onMetadataRetrieveError() {
-                        playbackManager.updatePlaybackState(
-                                getString(R.string.error_no_metadata));
-                    }
-
-                    @Override
-                    public void onCurrentQueueIndexUpdated(int queueIndex) {
-                        playbackManager.handlePlayRequest();
-                    }
-
-                    @Override
-                    public void onQueueUpdated(String title,
-                                               List<MediaSessionCompat.QueueItem> newQueue) {
-                        mediaSession.setQueue(newQueue);
-                        mediaSession.setQueueTitle(title);
-                    }
-                });
         try {
             mediaNotificationManager = new MediaNotificationManager(this);
         } catch (RemoteException e) {
             throw new IllegalStateException("Could not create a MediaNotificationManager", e);
         }
-//        playback = new LocalPlayback(this, musicProvider);
-//        playbackManager = new PlaybackManager(
-//                this,
-//                getResources(),
-//                musicProvider,
-//                queueManager,
-//                playback);
+        setupCarAndWearHelper();
 
-        // Start a new MediaSession
-        mediaSession = new MediaSessionCompat(this, "MusicService");
-        setSessionToken(mediaSession.getSessionToken());
-//        mediaSession.setCallback(playbackManager.getMediaSessionCallback());
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
-                | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
-                | MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS);
-
-
-        // TODO: 29/01/2018 setub car and wear helpers
-//        sessionExtras = new Bundle();
-//        CarHelper.setSlotReservationFlags(sessionExtras, true, true, true);
-//        WearHelper.setSlotReservationFlags(sessionExtras, true, true);
-//        WearHelper.setUseBackgroundFromTheme(sessionExtras, true);
-//        mediaSession.setExtras(sessionExtras);
-
+        player = ShuttlePlayer.createInstance(ExoPlayerFactory.newSimpleInstance(this, new DefaultTrackSelector()));
         mediaSessionConnector = new MediaSessionConnector(
                 mediaSession,
                 new DefaultAudioPlaybackController(
                         this,
                         mediaSession,
                         mediaNotificationManager,
-                        playback,
-                        audioFocusManagerListenerCallback));
-        SimpleExoPlayer player = ExoPlayerFactory.newSimpleInstance(this, new DefaultTrackSelector());
-        // Produces DataSource instances through which media data is loaded.
-        DataSource.Factory dataSourceFactory =
-                new DefaultDataSourceFactory(
-                        this, Util.getUserAgent(this, "uamp"), null);
-        // Produces Extractor instances for parsing the media data.
-        ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-        // The MediaSource represents the media to be played.
-
-        MediaSource mediaSource =
-                new ExtractorMediaSource(
-                        Uri.parse("/storage/emulated/0/Music/03Encore.mp3"), dataSourceFactory, extractorsFactory, null, null);
-        player.prepare(mediaSource);
-
-        mediaSessionConnector.setPlayer(
-                player,
-                new MediaSessionConnector.PlaybackPreparer() {
-                    @Override
-                    public long getSupportedPrepareActions() {
-                        return ACTIONS;
-                    }
-
-                    @Override
-                    public void onPrepare() {
-
-                    }
-
-                    @Override
-                    public void onPrepareFromMediaId(String mediaId, Bundle extras) {
-
-                    }
-
-                    @Override
-                    public void onPrepareFromSearch(String query, Bundle extras) {
-
-                    }
-
-                    @Override
-                    public void onPrepareFromUri(Uri uri, Bundle extras) {
-                        Log.e(TAG, "onPrepareFromUri: " + uri);
-                    }
-
-                    @Override
-                    public void onCommand(String command, Bundle extras, ResultReceiver cb) {
-
-                    }
-                });
-//        playbackManager.updatePlaybackState(null);
+                        audioFocusManagerListenerCallback,
+                        new DontBeNoisyBroadcastReceiver(mediaSession)));
+        mediaSessionConnector.setPlayer(player, new DefaultAudioPlaybackPreparerController());
+        mediaSessionConnector.setQueueEditor(new DefaultQueueEditor(mediaSession, this));
+        mediaSessionConnector.setQueueNavigator(new DefaultQueueNavigator(this, mediaSession));
 
         Context context = getApplicationContext();
         Intent intent = new Intent(context, ShortcutTrampolineActivity.class);
@@ -304,9 +197,11 @@ public class MusicService extends MediaBrowserServiceCompat implements
             String action = startIntent.getAction();
             String command = startIntent.getStringExtra(CMD_NAME);
             if (ACTION_CMD.equals(action)) {
-                if (CMD_PAUSE.equals(command)) {
-                    playbackManager.handlePauseRequest();
-                } else if (CMD_STOP_CASTING.equals(command)) {
+//                if (CMD_PAUSE.equals(command)) {
+//
+//                    playbackManager.handlePauseRequest();
+//                } else
+                if (CMD_STOP_CASTING.equals(command)) {
                     CastContext.getSharedInstance(this).getSessionManager().endCurrentSession(true);
                 }
             } else {
@@ -314,23 +209,18 @@ public class MusicService extends MediaBrowserServiceCompat implements
                 MediaButtonReceiver.handleIntent(mediaSession, startIntent);
             }
         }
-        // Reset the delay handler to enqueue a message to stop the service if
-        // nothing is playing.
-        delayedStopHandler.removeCallbacksAndMessages(null);
-        delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
         return START_STICKY;
     }
 
     /*
      * Handle case when user swipes the app away from the recents apps list by
-     * stopping the service (and any ongoing playback).
+     * stopping the service (and any ongoing player).
      */
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         super.onTaskRemoved(rootIntent);
-        stopSelf();
+        mediaSession.getController().getTransportControls().stop();
     }
-
 
     /**
      * (non-Javadoc)
@@ -341,10 +231,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         unregisterCarConnectionReceiver();
-        // Service is being killed, so make sure we release our resources
-//        playbackManager.handleStopRequest(null);
-//        mediaNotificationManager.stopNotification();
-//        mediaSession.getController().getTransportControls().stop();
+        mediaSession.getController().getTransportControls().stop();
 
         if (castSessionManager != null) {
             castSessionManager.removeSessionManagerListener(castSessionManagerListener,
@@ -352,7 +239,7 @@ public class MusicService extends MediaBrowserServiceCompat implements
         }
 
         delayedStopHandler.removeCallbacksAndMessages(null);
-//        mediaSession.release();
+        mediaSession.release();
     }
 
     @Override
@@ -423,43 +310,32 @@ public class MusicService extends MediaBrowserServiceCompat implements
     }
 
     /**
-     * Callback method called from PlaybackManager whenever the music is about to play.
+     * A simple handler that stops the service if player is not active (playing)
      */
-    @Override
-    public void onPlaybackStart() {
-        mediaSession.setActive(true);
+    private static class DelayedStopHandler extends Handler {
+        private final WeakReference<MusicService> mWeakReference;
 
-        delayedStopHandler.removeCallbacksAndMessages(null);
+        private DelayedStopHandler(MusicService service) {
+            mWeakReference = new WeakReference<>(service);
+        }
 
-        // The service needs to continue running even after the bound client (usually a
-        // MediaController) disconnects, otherwise the music playback will stop.
-        // Calling startService(Intent) will keep the service running until it is explicitly killed.
-        startService(new Intent(getApplicationContext(), MusicService.class));
+        @Override
+        public void handleMessage(Message msg) {
+            MusicService service = mWeakReference.get();
+            if (service != null && service.mediaSession != null) {
+                service.mediaSession.getController().getTransportControls().stop();
+//                if (service.playbackManager.getPlayback().isPlaying()) {
+//                    Log.d(TAG, "Ignoring delayed stop since the media player is in use.");
+//                    return;
+//                }
+//                Log.d(TAG, "Stopping service with delay handler.");
+//                service.stopSelf();
+            }
+        }
     }
 
 
-    /**
-     * Callback method called from PlaybackManager whenever the music stops playing.
-     */
-    @Override
-    public void onPlaybackStop() {
-        mediaSession.setActive(false);
-        // Reset the delayed stop handler, so after STOP_DELAY it will be executed again,
-        // potentially stopping the service.
-        delayedStopHandler.removeCallbacksAndMessages(null);
-        delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
-        stopForeground(true);
-    }
-
-    @Override
-    public void onNotificationRequired() {
-        mediaNotificationManager.startNotification();
-    }
-
-    @Override
-    public void onPlaybackStateUpdated(PlaybackStateCompat newState) {
-        mediaSession.setPlaybackState(newState);
-    }
+    //<editor-fold desc="Car and wear">
 
     private void registerCarConnectionReceiver() {
         // TODO: 29/01/2018 register CarConnectionReceiver
@@ -482,28 +358,13 @@ public class MusicService extends MediaBrowserServiceCompat implements
         }
     }
 
-    /**
-     * A simple handler that stops the service if playback is not active (playing)
-     */
-    private static class DelayedStopHandler extends Handler {
-        private final WeakReference<MusicService> mWeakReference;
-
-        private DelayedStopHandler(MusicService service) {
-            mWeakReference = new WeakReference<>(service);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            MusicService service = mWeakReference.get();
-            if (service != null && service.playbackManager.getPlayback() != null) {
-                if (service.playbackManager.getPlayback().isPlaying()) {
-                    Log.d(TAG, "Ignoring delayed stop since the media player is in use.");
-                    return;
-                }
-                Log.d(TAG, "Stopping service with delay handler.");
-                service.stopSelf();
-            }
-        }
+    // TODO: 29/01/2018 setup car and wear helpers
+    private void setupCarAndWearHelper() {
+//        sessionExtras = new Bundle();
+//        CarHelper.setSlotReservationFlags(sessionExtras, true, true, true);
+//        WearHelper.setSlotReservationFlags(sessionExtras, true, true);
+//        WearHelper.setUseBackgroundFromTheme(sessionExtras, true);
+//        mediaSession.setExtras(sessionExtras);
     }
 
     /**
@@ -519,7 +380,8 @@ public class MusicService extends MediaBrowserServiceCompat implements
             mediaSession.setExtras(sessionExtras);
             Playback playback = new LocalPlayback(MusicService.this, musicProvider);
             mediaRouter.setMediaSessionCompat(null);
-            playbackManager.switchToPlayback(playback, false);
+            // TODO: 03/02/2018  switchToPlayback
+//            playbackManager.switchToPlayback(player, false);
         }
 
         @Override
@@ -535,7 +397,8 @@ public class MusicService extends MediaBrowserServiceCompat implements
             // Now we can switch to CastPlayback
             Playback playback = new CastPlayback(musicProvider, MusicService.this);
             mediaRouter.setMediaSessionCompat(mediaSession);
-            playbackManager.switchToPlayback(playback, true);
+            // TODO: 03/02/2018  switchToPlayback
+//            playbackManager.switchToPlayback(player, true);
         }
 
         @Override
@@ -552,7 +415,8 @@ public class MusicService extends MediaBrowserServiceCompat implements
             // In onSessionEnded(), the underlying CastPlayback#mRemoteMediaClient
             // is disconnected and hence we update our local value of stream position
             // to the latest position.
-            playbackManager.getPlayback().updateLastKnownStreamPosition();
+            // TODO: 03/02/2018 what to do
+//            playbackManager.getPlayback().updateLastKnownStreamPosition();
         }
 
         @Override
@@ -567,4 +431,5 @@ public class MusicService extends MediaBrowserServiceCompat implements
         public void onSessionSuspended(CastSession session, int reason) {
         }
     }
+    //</editor-fold>
 }

@@ -105,7 +105,7 @@ public class MainController extends BaseNavigationController implements BackPres
 
         ((ViewGroup) multiSheetView.findViewById(multiSheetView.getSheetPeekViewResId(MultiSheetView.Sheet.SECOND))).addView(new UpNextView(getContext()));
 
-        toggleBottomSheetVisibility(false, false);
+//        toggleBottomSheetVisibility(false, false);
 
         return rootView;
     }
@@ -210,7 +210,7 @@ public class MainController extends BaseNavigationController implements BackPres
      * Hide/show the bottom sheet, depending on whether the queue is empty.
      */
     private void toggleBottomSheetVisibility(boolean collapse, boolean animate) {
-        if (MusicUtils.getQueue().isEmpty()) {
+        if (MusicUtils.getQueue(getActivity()).isEmpty()) {
             multiSheetView.hide(collapse, false);
         } else if (MiniPlayerLockManager.getInstance().canShowMiniPlayer()) {
             multiSheetView.unhide(animate);

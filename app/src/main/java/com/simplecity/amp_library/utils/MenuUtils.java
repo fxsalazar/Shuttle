@@ -1,6 +1,7 @@
 package com.simplecity.amp_library.utils;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.PopupMenu;
@@ -257,7 +258,7 @@ public class MenuUtils implements MusicUtils.Defs {
     }
 
     public static void play(Context context, Single<List<Song>> observable) {
-        MusicUtils.playAll(observable, message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show());
+        MusicUtils.playAll((Activity) context, observable, message -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show());
     }
 
     public static void newPlaylist(Context context, Single<List<Song>> single, Runnable insertCallback) {

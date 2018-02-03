@@ -125,7 +125,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             // The notification must be updated after setting started to true
             Notification notification = createNotification();
             if (notification != null) {
-                controller.registerCallback(cb);
+//                controller.registerCallback(cb);
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(ACTION_NEXT);
                 filter.addAction(ACTION_PAUSE);
@@ -237,9 +237,9 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
 
         @Override
-        public void onMetadataChanged(MediaMetadataCompat metadata) {
-            metadata = metadata;
-            LogHelper.d(TAG, "Received new metadata ", metadata);
+        public void onMetadataChanged(MediaMetadataCompat newMetadata) {
+            metadata = newMetadata;
+            LogHelper.d(TAG, "Received new metadata ", newMetadata);
             Notification notification = createNotification();
             if (notification != null) {
                 notificationManager.notify(NOTIFICATION_ID, notification);
@@ -359,10 +359,10 @@ public class MediaNotificationManager extends BroadcastReceiver {
         notificationBuilder.addAction(new NotificationCompat.Action(icon, label, intent));
 
         // If skip to next action is enabled
-        if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) {
+//        if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) {
             notificationBuilder.addAction(R.drawable.ic_skip_next_24dp,
                     service.getString(R.string.btn_skip), nextIntent);
-        }
+//        }
 
         return playPauseButtonPosition;
     }

@@ -2,7 +2,6 @@ package com.simplecity.amp_library.ui.fragments;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.view.LayoutInflater;
@@ -289,14 +288,14 @@ public class SongFragment extends BaseFragment implements
                     .map(adaptableItem -> ((SongView) adaptableItem).song)
                     .toList();
 
-            MediaControllerCompat.getMediaController(getActivity())
-                    .getTransportControls()
-                    .play();
+//            MediaControllerCompat.getMediaController(getActivity())
+//                    .getTransportControls()
+//                    .play();
 //                    .playFromUri(Uri.parse(songs.get(position - 1).path), null);
 
             // TODO: 31/01/2018   implement proper playAll
-//            MusicUtils.playAll(songs, songs.indexOf(songView.song), true, (String message) ->
-//                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
+            MusicUtils.playAll(getActivity(), songs.indexOf(songView.song), true, (String message) ->
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show(), songs);
         }
     }
 
@@ -333,7 +332,7 @@ public class SongFragment extends BaseFragment implements
 
     @Override
     public void onShuffleItemClick() {
-        MusicUtils.shuffleAll(DataManager.getInstance().getSongsRelay().firstOrError(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
+        MusicUtils.shuffleAll(getActivity(), DataManager.getInstance().getSongsRelay().firstOrError(), message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show());
     }
 
     @Override

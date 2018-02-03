@@ -808,7 +808,7 @@ public abstract class BaseDetailFragment extends BaseFragment implements
             disposables.add(getSongs()
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(songs -> MusicUtils.playAll(songs, songs.indexOf(songView.song), true, message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show())));
+                    .subscribe(songs -> MusicUtils.playAll(getActivity(), songs.indexOf(songView.song), true, message -> Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show(), songs)));
         }
     }
 
@@ -860,7 +860,7 @@ public abstract class BaseDetailFragment extends BaseFragment implements
                         deleteDialog -> deleteDialog.show(getChildFragmentManager()),
                         () -> UpgradeDialog.getUpgradeDialog(getActivity()).show(),
                         null
-                        ));
+                ));
         popupMenu.show();
     }
 

@@ -432,7 +432,7 @@ public class AlbumFragment extends BaseFragment implements
     public void onShuffleItemClick() {
         // Note: For album-shuffle mode, we don't actually turn shuffle on.
         MusicUtils.setShuffleMode(MusicService.ShuffleMode.OFF);
-        MusicUtils.playAll(DataManager.getInstance()
+        MusicUtils.playAll(getActivity(), DataManager.getInstance()
                         .getSongsRelay()
                         .firstOrError()
                         .map(Operators::albumShuffleSongs),

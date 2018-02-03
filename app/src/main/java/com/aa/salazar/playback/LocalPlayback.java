@@ -15,9 +15,7 @@
  */
 package com.aa.salazar.playback;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -25,7 +23,6 @@ import android.net.wifi.WifiManager;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
 
-import com.aa.salazar.MusicService;
 import com.aa.salazar.exo.MusicProvider;
 import com.aa.salazar.utils.LogHelper;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -89,22 +86,6 @@ public final class LocalPlayback implements Playback {
     private final IntentFilter audioNoisyIntentFilter =
             new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
 
-    private final BroadcastReceiver audioNoisyReceiver =
-            new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
-                        LogHelper.d(TAG, "Headphones disconnected.");
-                        if (isPlaying()) {
-                            Intent i = new Intent(context, MusicService.class);
-                            i.setAction(MusicService.ACTION_CMD);
-                            i.putExtra(MusicService.CMD_NAME, MusicService.CMD_PAUSE);
-                            context.startService(i);
-                        }
-                    }
-                }
-            };
-
     public LocalPlayback(Context context, MusicProvider musicProvider) {
         Context applicationContext = context.getApplicationContext();
         this.context = applicationContext;
@@ -122,7 +103,6 @@ public final class LocalPlayback implements Playback {
 
     @Override
     public void stop(boolean notifyListeners) {
-        unregisterAudioNoisyReceiver();
         releaseResources(true);
     }
 
@@ -177,7 +157,6 @@ public final class LocalPlayback implements Playback {
     @Override
     public void play(QueueItem item) {
         playOnFocusGain = true;
-        registerAudioNoisyReceiver();
         String mediaId = item.getDescription().getMediaId();
         boolean mediaHasChanged = !TextUtils.equals(mediaId, currentMediaId);
         if (mediaHasChanged) {
@@ -254,14 +233,12 @@ public final class LocalPlayback implements Playback {
         }
         // While paused, retain the player instance, but give up audio focus.
         releaseResources(false);
-        unregisterAudioNoisyReceiver();
     }
 
     @Override
     public void seekTo(long position) {
         LogHelper.d(TAG, "seekTo called with ", position);
         if (exoPlayer != null) {
-            registerAudioNoisyReceiver();
             exoPlayer.seekTo(position);
         }
     }
@@ -319,8 +296,6 @@ public final class LocalPlayback implements Playback {
             // We don't have audio focus and can't duck, so we have to pause
             pause();
         } else {
-            registerAudioNoisyReceiver();
-
             if (currentAudioFocusState == AUDIO_NO_FOCUS_CAN_DUCK) {
                 // We're permitted to play, but only if we 'duck', ie: play softly
                 exoPlayer.setVolume(VOLUME_DUCK);
@@ -356,20 +331,6 @@ public final class LocalPlayback implements Playback {
 
         if (wifiLock.isHeld()) {
             wifiLock.release();
-        }
-    }
-
-    private void registerAudioNoisyReceiver() {
-        if (!audioNoisyReceiverRegistered) {
-            context.registerReceiver(audioNoisyReceiver, audioNoisyIntentFilter);
-            audioNoisyReceiverRegistered = true;
-        }
-    }
-
-    private void unregisterAudioNoisyReceiver() {
-        if (audioNoisyReceiverRegistered) {
-            context.unregisterReceiver(audioNoisyReceiver);
-            audioNoisyReceiverRegistered = false;
         }
     }
 
@@ -433,8 +394,8 @@ public final class LocalPlayback implements Playback {
         }
 
         @Override
-        public void onPositionDiscontinuity() {
-            // Nothing to do.
+        public void onPositionDiscontinuity(int reason) {
+
         }
 
         @Override
@@ -443,8 +404,18 @@ public final class LocalPlayback implements Playback {
         }
 
         @Override
+        public void onSeekProcessed() {
+
+        }
+
+        @Override
         public void onRepeatModeChanged(int repeatMode) {
             // Nothing to do.
+        }
+
+        @Override
+        public void onShuffleModeEnabledChanged(boolean shuffleModeEnabled) {
+
         }
     }
 }

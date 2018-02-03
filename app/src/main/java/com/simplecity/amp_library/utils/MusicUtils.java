@@ -1,10 +1,16 @@
 package com.simplecity.amp_library.utils;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.net.Uri;
+import android.support.v4.media.MediaDescriptionCompat;
+import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.util.Log;
 
 import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.ShuttleApplication;
@@ -37,49 +43,70 @@ public class MusicUtils {
      * Sends a list of songs to the MusicService for playback
      */
     @SuppressLint("CheckResult")
-    public static void playAll(Single<List<Song>> songsSingle, UnsafeConsumer<String> onEmpty) {
+    public static void playAll(Activity activity, Single<List<Song>> songsSingle, UnsafeConsumer<String> onEmpty) {
         songsSingle
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(songs -> playAll(songs, 0, true, onEmpty));
+                .subscribe(songs -> playAll(activity, 0, true, onEmpty, songs));
+    }
+
+    private static MediaDescriptionCompat songToQueueItem(Song song) {
+        String path = song.path;
+        Log.e(TAG, "songToQueueItem: " + path);
+        MediaDescriptionCompat description = new MediaDescriptionCompat
+                .Builder()
+                .setTitle("title")
+                .setDescription("descirption")
+                .setMediaId(String.valueOf(song.id))
+                .setMediaUri(Uri.parse(path))
+                .build();
+        return description;
     }
 
     /**
      * Sends a list of songs to the MusicService for playback
      */
-    public static void playAll(List<Song> songs, int position, boolean canClearShuffle, UnsafeConsumer<String> onEmpty) {
+    public static void playAll(Activity activity, int position, boolean canClearShuffle, UnsafeConsumer<String> onEmpty, List<Song> songs) {
 
-        if (canClearShuffle && !SettingsManager.getInstance().getRememberShuffle()) {
-            setShuffleMode(MusicService.ShuffleMode.OFF);
+        MediaControllerCompat mediaController = MediaControllerCompat.getMediaController(activity);
+        for (Song s : songs) {
+            mediaController.addQueueItem(songToQueueItem(s));
         }
+        mediaController.getTransportControls().play();
 
-        if (songs.size() == 0
-                || MusicServiceConnectionUtils.serviceBinder == null
-                || MusicServiceConnectionUtils.serviceBinder.getService() == null) {
+        activity.sendBroadcast(new Intent(MusicService.InternalIntents.QUEUE_CHANGED));
 
-            onEmpty.accept(ShuttleApplication.getInstance().getResources().getString(R.string.empty_playlist));
-            return;
-        }
-
-        if (position < 0) {
-            position = 0;
-        }
-
-        MusicServiceConnectionUtils.serviceBinder.getService().open(songs, position);
-        MusicServiceConnectionUtils.serviceBinder.getService().play();
+//        if (canClearShuffle && !SettingsManager.getInstance().getRememberShuffle()) {
+//            setShuffleMode(MusicService.ShuffleMode.OFF);
+//        }
+//
+//        if (songs.size() == 0
+//                || MusicServiceConnectionUtils.serviceBinder == null
+//                || MusicServiceConnectionUtils.serviceBinder.getService() == null) {
+//
+//            onEmpty.accept(ShuttleApplication.getInstance().getResources().getString(R.string.empty_playlist));
+//            return;
+//        }
+//
+//        if (position < 0) {
+//            position = 0;
+//        }
+//
+//        MusicServiceConnectionUtils.serviceBinder.getService().open(songs, position);
+//        MusicServiceConnectionUtils.serviceBinder.getService().play();
     }
 
     /**
      * Shuffles all songs in a given song list
      */
     @SuppressLint("CheckResult")
-    public static void shuffleAll(Single<List<Song>> songsSingle, UnsafeConsumer<String> onEmpty) {
+    public static void shuffleAll(Activity activity, Single<List<Song>> songsSingle, UnsafeConsumer<String> onEmpty) {
         setShuffleMode(MusicService.ShuffleMode.ON);
         songsSingle
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         songs -> {
                             if (!songs.isEmpty()) {
-                                playAll(songs, new Random().nextInt(songs.size()), false, onEmpty);
+                                playAll(activity, new Random().nextInt(songs.size()), false, onEmpty, songs);
                             }
                         },
                         e -> LogUtils.logException(TAG, "Shuffle all error", e));
@@ -394,6 +421,10 @@ public class MusicUtils {
             return MusicServiceConnectionUtils.serviceBinder.getService().getQueue();
         }
         return new ArrayList<>();
+    }
+
+    public static List<MediaSessionCompat.QueueItem> getQueue(Activity activity) {
+        return MediaControllerCompat.getMediaController(activity).getQueue();
     }
 
     public static int getQueuePosition() {

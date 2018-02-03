@@ -77,7 +77,7 @@ public class SuggestedFragment extends BaseFragment implements
 
         @Override
         public void onSongClick(Song song, SuggestedSongView.ViewHolder holder) {
-            MusicUtils.playAll(songs, songs.indexOf(song), true, (String message) -> Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
+            MusicUtils.playAll(getActivity(), songs.indexOf(song), true, (String message) -> Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show(), songs);
         }
 
         @Override
