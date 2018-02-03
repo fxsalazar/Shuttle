@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
@@ -38,6 +39,10 @@ import android.support.v4.media.session.PlaybackStateCompat;
 
 import com.aa.salazar.MusicService;
 import com.aa.salazar.utils.LogHelper;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.target.Target;
 import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.ui.activities.MainActivity;
 
@@ -119,13 +124,13 @@ public class MediaNotificationManager extends BroadcastReceiver {
      */
     public void startNotification() {
         if (!started) {
+            controller.registerCallback(cb);
             metadata = controller.getMetadata();
             playbackState = controller.getPlaybackState();
 
             // The notification must be updated after setting started to true
             Notification notification = createNotification();
             if (notification != null) {
-//                controller.registerCallback(cb);
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(ACTION_NEXT);
                 filter.addAction(ACTION_PAUSE);
@@ -269,17 +274,19 @@ public class MediaNotificationManager extends BroadcastReceiver {
         String fetchArtUrl = null;
         Bitmap art = null;
         if (description.getIconUri() != null) {
+
+
             // This sample assumes the iconUri will be a valid URL formatted String, but
             // it can actually be any valid Android Uri formatted String.
             // async fetch the album art icon
             // TODO: 31/01/2018 Load album art
-//            String artUrl = description.getIconUri().toString();
+            String artUrl = description.getIconUri().toString();
 //            art = AlbumArtCache.getInstance().getBigImage(artUrl);
 //            if (art == null) {
-//                fetchArtUrl = artUrl;
+            fetchArtUrl = artUrl;
 //                // use a placeholder art while the remote art is being downloaded
-//                art = BitmapFactory.decodeResource(service.getResources(),
-//                        R.drawable.ic_default_art);
+            art = BitmapFactory.decodeResource(service.getResources(),
+                    R.drawable.album_art_placeholder);
 //            }
         }
 
@@ -360,8 +367,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         // If skip to next action is enabled
 //        if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) {
-            notificationBuilder.addAction(R.drawable.ic_skip_next_24dp,
-                    service.getString(R.string.btn_skip), nextIntent);
+        notificationBuilder.addAction(R.drawable.ic_skip_next_24dp,
+                service.getString(R.string.btn_skip), nextIntent);
 //        }
 
         return playPauseButtonPosition;
@@ -381,20 +388,18 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     private void fetchBitmapFromURLAsync(final String bitmapUrl,
                                          final NotificationCompat.Builder builder) {
-// TODO: 31/01/2018 impl load album art async
-//        AlbumArtCache.getInstance().fetch(bitmapUrl, new AlbumArtCache.FetchListener() {
-//            @Override
-//            public void onFetched(String artUrl, Bitmap bitmap, Bitmap icon) {
-//                if (metadata != null && metadata.getDescription().getIconUri() != null &&
-//                        metadata.getDescription().getIconUri().toString().equals(artUrl)) {
-//                    // If the media is still the same, update the notification:
-//                    LogHelper.d(TAG, "fetchBitmapFromURLAsync: set bitmap to ", artUrl);
-//                    builder.setLargeIcon(bitmap);
-//                    addActions(builder);
-//                    notificationManager.notify(NOTIFICATION_ID, builder.build());
-//                }
-//            }
-//        });
+
+        Glide.with(service).load(bitmapUrl).asBitmap().into(
+                new SimpleTarget<Bitmap>(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL) {
+                    @Override
+                    public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
+                        LogHelper.d(TAG, "fetchBitmapFromURLAsync: set bitmap to ", bitmapUrl);
+                        builder.setLargeIcon(resource);
+                        addActions(builder);
+                        notificationManager.notify(NOTIFICATION_ID, builder.build());
+                    }
+                }
+        );
     }
 
     /**

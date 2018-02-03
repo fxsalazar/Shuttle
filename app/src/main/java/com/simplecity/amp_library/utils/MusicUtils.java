@@ -54,8 +54,10 @@ public class MusicUtils {
         Log.e(TAG, "songToQueueItem: " + path);
         MediaDescriptionCompat description = new MediaDescriptionCompat
                 .Builder()
-                .setTitle("title")
-                .setDescription("descirption")
+                .setTitle(song.name)
+                .setDescription(song.albumName)
+                .setIconUri(Uri.parse("https://i.guim.co.uk/img/static/sys-images/Guardian/Pix/arts/2003/02/04/Jay-Z_square.jpg?w=300&q=55&auto=format&usm=12&fit=max&s=11da01d1f7441c3017b7c338b1c918ed"))
+                .setSubtitle(song.albumArtistName + " " + song.artistName)
                 .setMediaId(String.valueOf(song.id))
                 .setMediaUri(Uri.parse(path))
                 .build();

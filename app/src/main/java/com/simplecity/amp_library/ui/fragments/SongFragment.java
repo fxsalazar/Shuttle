@@ -288,11 +288,6 @@ public class SongFragment extends BaseFragment implements
                     .map(adaptableItem -> ((SongView) adaptableItem).song)
                     .toList();
 
-//            MediaControllerCompat.getMediaController(getActivity())
-//                    .getTransportControls()
-//                    .play();
-//                    .playFromUri(Uri.parse(songs.get(position - 1).path), null);
-
             // TODO: 31/01/2018   implement proper playAll
             MusicUtils.playAll(getActivity(), songs.indexOf(songView.song), true, (String message) ->
                     Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show(), songs);

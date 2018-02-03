@@ -1,6 +1,5 @@
 package com.aa.salazar.exo;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.Nullable;
@@ -12,9 +11,6 @@ import android.util.Log;
 import com.aa.salazar.utils.LogHelper;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
 
 import java.util.List;
 
@@ -26,11 +22,9 @@ import java.util.List;
 public final class DefaultQueueEditor implements MediaSessionConnector.QueueEditor {
     private static final String TAG = LogHelper.makeLogTag(DefaultQueueEditor.class);
     private MediaSessionCompat mediaSession;
-    private final DataSource.Factory dataSourceFactory;
 
-    public DefaultQueueEditor(MediaSessionCompat mediaSession, Context context) {
+    public DefaultQueueEditor(MediaSessionCompat mediaSession) {
         this.mediaSession = mediaSession;
-        this.dataSourceFactory = new DefaultDataSourceFactory(context, Util.getUserAgent(context, "Shuttle"));
     }
 
     @Override
@@ -51,10 +45,9 @@ public final class DefaultQueueEditor implements MediaSessionConnector.QueueEdit
     @Override
     public void onAddQueueItem(Player player, MediaDescriptionCompat description) {
         List<MediaSessionCompat.QueueItem> queue = mediaSession.getController().getQueue();
-        MediaSessionCompat.QueueItem queueItem = new MediaSessionCompat.QueueItem(description, description.describeContents());
+        MediaSessionCompat.QueueItem queueItem = new MediaSessionCompat.QueueItem(description, Long.parseLong(description.getMediaId()));
         queue.add(queueItem);
         mediaSession.setQueue(queue);
-//        ((ExoPlayer) player).prepare(new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(description.getMediaUri()));
     }
 
     @Override

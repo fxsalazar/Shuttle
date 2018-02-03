@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.support.annotation.NonNull;
 import android.support.v4.media.MediaBrowserServiceCompat;
+import android.support.v4.media.MediaDescriptionCompat;
+import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -14,6 +16,9 @@ import com.aa.salazar.MusicService;
 import com.aa.salazar.utils.LogHelper;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController;
+
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
 
 /**
  * Created by fxsalazar
@@ -31,6 +36,7 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
     private final MediaSessionCompat mediaSession;
     private final MediaNotificationManager mediaNotificationManager;
     private final AudioManager audioManager;
+    private final BehaviorSubject<Integer> playbackStateChangedBehaviorSubject = BehaviorSubject.create();
 
     public DefaultAudioPlaybackController(
             @NonNull MediaBrowserServiceCompat service,
@@ -44,6 +50,47 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
         audioManager = (AudioManager) service.getSystemService(Context.AUDIO_SERVICE);
         audioFocusManager = new AudioFocusManager(audioManager, audioFocusManagerListenerCallback);
         this.dontBeNoisyBroadcastReceiver = dontBeNoisyBroadcastReceiver;
+
+        Observable<MediaDescriptionCompat> xx = Observable.create(emitter -> {
+            mediaSession.getController().registerCallback(new MediaControllerCompat.Callback() {
+                @Override
+                public void onMetadataChanged(MediaMetadataCompat metadata) {
+                    emitter.onNext(metadata.getDescription());
+                }
+            });
+        });
+
+        mediaSession.getController().registerCallback(new MediaControllerCompat.Callback() {
+            @Override
+            public void onPlaybackStateChanged(PlaybackStateCompat state) {
+                int stateState = state.getState();
+                switch (stateState) {
+                    case PlaybackStateCompat.STATE_NONE:
+                        Log.e(TAG, "======> onPlaybackStateChanged: NONE");
+                        break;
+                    case PlaybackStateCompat.STATE_PAUSED:
+                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_PAUSED");
+                        break;
+                    case PlaybackStateCompat.STATE_CONNECTING:
+                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_CONNECTING");
+                        break;
+                    case PlaybackStateCompat.STATE_STOPPED:
+                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_STOPPED");
+                        break;
+                    case PlaybackStateCompat.STATE_BUFFERING:
+                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_BUFFERING");
+                        break;
+                    case PlaybackStateCompat.STATE_PLAYING:
+                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_PLAYING");
+                        break;
+                    default:
+                        Log.e(TAG, "======> onPlaybackStateChanged: " + stateState);
+
+                }
+                playbackStateChangedBehaviorSubject.onNext(stateState);
+
+            }
+        });
     }
 
     @Override
@@ -74,18 +121,25 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
         } else if (audioFocus == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             MediaControllerCompat controller = mediaSession.getController();
             if (controller.getPlaybackState().getState() == PlaybackStateCompat.STATE_NONE) {
+                // Prepare the first Item on the queue if any
                 controller.getTransportControls().skipToNext();
-                prepareForPlayback();
+
+                playbackStateChangedBehaviorSubject
+                        .filter(integer -> integer == PlaybackStateCompat.STATE_PAUSED)
+                        .firstElement()
+                        .subscribe(playbackState -> play(player));
+            } else {
+                play(player);
             }
-            super.onPlay(player);
         }
     }
 
-    private void prepareForPlayback() {
+    private void play(Player player) {
         // start service
         service.startService(new Intent(service.getApplicationContext(), MusicService.class));
         // set media session active
         this.mediaSession.setActive(true);
+        super.onPlay(player);
         // register noisy
         dontBeNoisyBroadcastReceiver.registerBroadcast(service);
         // start notification foreground

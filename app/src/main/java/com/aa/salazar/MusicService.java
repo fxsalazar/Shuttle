@@ -129,10 +129,6 @@ public class MusicService extends MediaBrowserServiceCompat {
         }
     };
 
-    /*
-     * (non-Javadoc)
-     * @see android.app.Service#onCreate()
-     */
     @Override
     public void onCreate() {
         super.onCreate();
@@ -162,7 +158,7 @@ public class MusicService extends MediaBrowserServiceCompat {
                         audioFocusManagerListenerCallback,
                         new DontBeNoisyBroadcastReceiver(mediaSession)));
         mediaSessionConnector.setPlayer(player, new DefaultAudioPlaybackPreparerController());
-        mediaSessionConnector.setQueueEditor(new DefaultQueueEditor(mediaSession, this));
+        mediaSessionConnector.setQueueEditor(new DefaultQueueEditor(mediaSession));
         mediaSessionConnector.setQueueNavigator(new DefaultQueueNavigator(this, mediaSession));
 
         Context context = getApplicationContext();

@@ -14,9 +14,10 @@ import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
+
+import java.util.List;
 
 /**
  * Created by fxsalazar
@@ -27,13 +28,13 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
 
     private static final String TAG = LogHelper.makeLogTag(DefaultQueueNavigator.class);
     private final MediaSessionCompat mediaSession;
-    private final DataSource.Factory dataSourceFactory;
     private ExtractorMediaSource.Factory factory;
+    private long activeItem;
+    private int activePosition = 0;
 
     public DefaultQueueNavigator(Context context, MediaSessionCompat mediaSession) {
         this.mediaSession = mediaSession;
-        this.dataSourceFactory = new DefaultDataSourceFactory(context, Util.getUserAgent(context, "Shuttle"));
-        this.factory = new ExtractorMediaSource.Factory(dataSourceFactory);
+        this.factory = new ExtractorMediaSource.Factory(new DefaultDataSourceFactory(context, Util.getUserAgent(context, "Shuttle")));
     }
 
     @Override
@@ -58,12 +59,11 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
 
     @Override
     public void onCurrentWindowIndexChanged(Player player) {
-
     }
 
     @Override
     public long getActiveQueueItemId(@Nullable Player player) {
-        return 0;
+        return activeItem;
     }
 
     @Override
@@ -80,10 +80,15 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
     public void onSkipToNext(Player player) {
         Log.e(TAG, "onSkipToNext: ");
         MediaControllerCompat controller = mediaSession.getController();
-        Uri path = controller.getQueue().get(1).getDescription().getMediaUri();
-//        Uri parse = Uri.parse("/storage/emulated/0/Music/04 Show Me What You Got.m4a");
-
-        // The MediaSource represents the media to be played.
-        ((ExoPlayer) player).prepare(factory.createMediaSource(path));
+        List<MediaSessionCompat.QueueItem> queue = controller.getQueue();
+        if (queue != null && !queue.isEmpty()) {
+            MediaSessionCompat.QueueItem queueItem = queue.get(activePosition++);
+            activeItem = Long.parseLong(queueItem.getDescription().getMediaId());
+            Uri path = queueItem.getDescription().getMediaUri();
+            // Uri parse = Uri.parse("/storage/emulated/0/Music/04 Show Me What You Got.m4a");
+            // The MediaSource represents the media to be played.
+            ((ExoPlayer) player).prepare(factory.createMediaSource(path));
+            mediaSession.setQueue(queue);
+        }
     }
 }
