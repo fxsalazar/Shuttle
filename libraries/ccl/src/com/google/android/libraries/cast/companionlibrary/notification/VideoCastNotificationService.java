@@ -16,18 +16,8 @@
 
 package com.google.android.libraries.cast.companionlibrary.notification;
 
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.Service;
-import android.content.Context;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.IBinder;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.TaskStackBuilder;
+import static com.google.android.libraries.cast.companionlibrary.utils.LogUtils.LOGD;
+import static com.google.android.libraries.cast.companionlibrary.utils.LogUtils.LOGE;
 
 import com.google.android.gms.cast.MediaInfo;
 import com.google.android.gms.cast.MediaMetadata;
@@ -40,17 +30,28 @@ import com.google.android.libraries.cast.companionlibrary.cast.VideoCastManager;
 import com.google.android.libraries.cast.companionlibrary.cast.callbacks.VideoCastConsumerImpl;
 import com.google.android.libraries.cast.companionlibrary.cast.exceptions.CastException;
 import com.google.android.libraries.cast.companionlibrary.cast.exceptions.NoConnectionException;
-import com.google.android.libraries.cast.companionlibrary.cast.exceptions.TransientNetworkDisconnectionException;
+import com.google.android.libraries.cast.companionlibrary.cast.exceptions
+        .TransientNetworkDisconnectionException;
 import com.google.android.libraries.cast.companionlibrary.remotecontrol.VideoIntentReceiver;
 import com.google.android.libraries.cast.companionlibrary.utils.FetchBitmapTask;
 import com.google.android.libraries.cast.companionlibrary.utils.LogUtils;
 import com.google.android.libraries.cast.companionlibrary.utils.Utils;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.support.v4.app.TaskStackBuilder;
+import android.support.v7.app.NotificationCompat;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.android.libraries.cast.companionlibrary.utils.LogUtils.LOGD;
-import static com.google.android.libraries.cast.companionlibrary.utils.LogUtils.LOGE;
 
 /**
  * A service to provide status bar Notifications when we are casting. For JB+ versions,
@@ -155,7 +156,7 @@ public class VideoCastNotificationService extends Service {
 
             @Override
             public void onMediaQueueUpdated(List<MediaQueueItem> queueItems, MediaQueueItem item,
-                                            int repeatMode, boolean shuffle) {
+                    int repeatMode, boolean shuffle) {
                 int size = 0;
                 int position = 0;
                 if (queueItems != null) {
@@ -335,13 +336,13 @@ public class VideoCastNotificationService extends Service {
                 mCastManager.getDeviceName());
 
         NotificationCompat.Builder builder
-                = new NotificationCompat.Builder(this, "ChannelId")
+                = (NotificationCompat.Builder) new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_stat_action_notification)
                 .setContentTitle(metadata.getString(MediaMetadata.KEY_TITLE))
                 .setContentText(castingTo)
                 .setContentIntent(getContentIntent(info))
                 .setLargeIcon(bitmap)
-                .setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
+                .setStyle(new NotificationCompat.MediaStyle()
                         .setShowActionsInCompactView(mNotificationCompactActionsArray)
                         .setMediaSession(mCastManager.getMediaSessionCompatToken()))
                 .setOngoing(true)
@@ -405,7 +406,7 @@ public class VideoCastNotificationService extends Service {
         Intent intent = new Intent(this, VideoIntentReceiver.class);
         intent.setAction(ACTION_REWIND);
         intent.setPackage(getPackageName());
-        intent.putExtra(EXTRA_FORWARD_STEP_MS, (int) -millis);
+        intent.putExtra(EXTRA_FORWARD_STEP_MS, (int)-millis);
         PendingIntent pendingIntent = PendingIntent
                 .getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
         int iconResourceId = R.drawable.ic_notification_rewind_48dp;
