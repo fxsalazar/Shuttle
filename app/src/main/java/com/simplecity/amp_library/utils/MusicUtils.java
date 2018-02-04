@@ -51,7 +51,7 @@ public class MusicUtils {
 
     private static MediaDescriptionCompat songToQueueItem(Song song) {
         String path = song.path;
-        Log.e(TAG, "songToQueueItem: " + path);
+        Log.e(TAG, "songToQueueItem: " + song.id + " " + path);
         MediaDescriptionCompat description = new MediaDescriptionCompat
                 .Builder()
                 .setTitle(song.name)

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -18,6 +19,10 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by fxsalazar
@@ -28,9 +33,9 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
 
     private static final String TAG = LogHelper.makeLogTag(DefaultQueueNavigator.class);
     private final MediaSessionCompat mediaSession;
-    private ExtractorMediaSource.Factory factory;
-    private long activeItem;
-    private int activePosition = 0;
+    private final ExtractorMediaSource.Factory factory;
+    private final AtomicLong activeItem = new AtomicLong();
+    private final AtomicInteger activePosition = new AtomicInteger(-1);
 
     public DefaultQueueNavigator(Context context, MediaSessionCompat mediaSession) {
         this.mediaSession = mediaSession;
@@ -59,36 +64,64 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
 
     @Override
     public void onCurrentWindowIndexChanged(Player player) {
+        Log.e(TAG, "onCurrentWindowIndexChanged: ");
     }
 
     @Override
     public long getActiveQueueItemId(@Nullable Player player) {
-        return activeItem;
+        return activeItem.get();
     }
 
     @Override
     public void onSkipToPrevious(Player player) {
-
+        Log.e(TAG, "onSkipToPrevious: ");
+        getMediaSessionQueue(queueItems -> {
+            if (player.getCurrentPosition() > 5000 || activePosition.get() <= 0) {
+                player.seekToDefaultPosition();
+            } else {
+                playQueueItem(player, queueItems.get(activePosition.decrementAndGet()));
+            }
+        });
     }
 
     @Override
     public void onSkipToQueueItem(Player player, long id) {
-
+        getMediaSessionQueue(queueItems -> {
+            for (MediaSessionCompat.QueueItem queueItem : queueItems) {
+                if (Long.parseLong(queueItem.getDescription().getMediaId()) == id) {
+                    playQueueItem(player, queueItem);
+                    activePosition.set(queueItems.indexOf(queueItem));
+                }
+            }
+        });
     }
 
     @Override
     public void onSkipToNext(Player player) {
         Log.e(TAG, "onSkipToNext: ");
+        getMediaSessionQueue(queueItems -> playQueueItem(player, queueItems.get(activePosition.incrementAndGet())));
+    }
+
+    private void playQueueItem(Player player, MediaSessionCompat.QueueItem queueItem) {
+        activeItem.set(Long.parseLong(queueItem.getDescription().getMediaId()));
+        Uri path = queueItem.getDescription().getMediaUri();
+//         Uri path = Uri.parse("/storage/emulated/0/Music/AUD-20160226-WA0018.opus");
+        // The MediaSource represents the media to be played.
+        ((ExoPlayer) player).prepare(factory.createMediaSource(path));
+    }
+
+
+    private void getMediaSessionQueue(@NonNull Consumer<List<MediaSessionCompat.QueueItem>> doWith) {
         MediaControllerCompat controller = mediaSession.getController();
         List<MediaSessionCompat.QueueItem> queue = controller.getQueue();
         if (queue != null && !queue.isEmpty()) {
-            MediaSessionCompat.QueueItem queueItem = queue.get(activePosition++);
-            activeItem = Long.parseLong(queueItem.getDescription().getMediaId());
-            Uri path = queueItem.getDescription().getMediaUri();
-            // Uri parse = Uri.parse("/storage/emulated/0/Music/04 Show Me What You Got.m4a");
-            // The MediaSource represents the media to be played.
-            ((ExoPlayer) player).prepare(factory.createMediaSource(path));
-            mediaSession.setQueue(queue);
+            try {
+                doWith.accept(queue);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            Log.e(TAG, "getMediaSessionQueue: Queue is null/empty");
         }
     }
 }

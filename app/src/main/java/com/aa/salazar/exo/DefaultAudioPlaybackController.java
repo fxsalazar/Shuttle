@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.support.annotation.NonNull;
 import android.support.v4.media.MediaBrowserServiceCompat;
-import android.support.v4.media.MediaDescriptionCompat;
-import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -17,8 +15,8 @@ import com.aa.salazar.utils.LogHelper;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController;
 
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.processors.BehaviorProcessor;
 
 /**
  * Created by fxsalazar
@@ -35,8 +33,16 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
     private final MediaBrowserServiceCompat service;
     private final MediaSessionCompat mediaSession;
     private final MediaNotificationManager mediaNotificationManager;
-    private final AudioManager audioManager;
-    private final BehaviorSubject<Integer> playbackStateChangedBehaviorSubject = BehaviorSubject.create();
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+    private final BehaviorProcessor<PlaybackStateCompat> playbackStateProcessor = BehaviorProcessor.create();
+    private final MediaControllerCompat.Callback callback = new MediaControllerCompat.Callback() {
+        @Override
+        public void onPlaybackStateChanged(PlaybackStateCompat state) {
+            Log.w(TAG, "onPlaybackStateChanged: " + PlaybackStateCompatExtension.getReadableState(state));
+            playbackStateProcessor.onNext(state);
+
+        }
+    };
 
     public DefaultAudioPlaybackController(
             @NonNull MediaBrowserServiceCompat service,
@@ -47,50 +53,10 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
         this.service = service;
         this.mediaSession = mediaSession;
         this.mediaNotificationManager = mediaNotificationManager;
-        audioManager = (AudioManager) service.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager audioManager = (AudioManager) service.getSystemService(Context.AUDIO_SERVICE);
         audioFocusManager = new AudioFocusManager(audioManager, audioFocusManagerListenerCallback);
         this.dontBeNoisyBroadcastReceiver = dontBeNoisyBroadcastReceiver;
 
-        Observable<MediaDescriptionCompat> xx = Observable.create(emitter -> {
-            mediaSession.getController().registerCallback(new MediaControllerCompat.Callback() {
-                @Override
-                public void onMetadataChanged(MediaMetadataCompat metadata) {
-                    emitter.onNext(metadata.getDescription());
-                }
-            });
-        });
-
-        mediaSession.getController().registerCallback(new MediaControllerCompat.Callback() {
-            @Override
-            public void onPlaybackStateChanged(PlaybackStateCompat state) {
-                int stateState = state.getState();
-                switch (stateState) {
-                    case PlaybackStateCompat.STATE_NONE:
-                        Log.e(TAG, "======> onPlaybackStateChanged: NONE");
-                        break;
-                    case PlaybackStateCompat.STATE_PAUSED:
-                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_PAUSED");
-                        break;
-                    case PlaybackStateCompat.STATE_CONNECTING:
-                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_CONNECTING");
-                        break;
-                    case PlaybackStateCompat.STATE_STOPPED:
-                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_STOPPED");
-                        break;
-                    case PlaybackStateCompat.STATE_BUFFERING:
-                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_BUFFERING");
-                        break;
-                    case PlaybackStateCompat.STATE_PLAYING:
-                        Log.e(TAG, "======> onPlaybackStateChanged: STATE_PLAYING");
-                        break;
-                    default:
-                        Log.e(TAG, "======> onPlaybackStateChanged: " + stateState);
-
-                }
-                playbackStateChangedBehaviorSubject.onNext(stateState);
-
-            }
-        });
     }
 
     @Override
@@ -119,15 +85,16 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
             // TODO: 01/02/2018 what to do here?
             LogHelper.e(TAG, "Request not granted");
         } else if (audioFocus == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            mediaSession.getController().registerCallback(callback);
             MediaControllerCompat controller = mediaSession.getController();
             if (controller.getPlaybackState().getState() == PlaybackStateCompat.STATE_NONE) {
                 // Prepare the first Item on the queue if any
                 controller.getTransportControls().skipToNext();
-
-                playbackStateChangedBehaviorSubject
-                        .filter(integer -> integer == PlaybackStateCompat.STATE_PAUSED)
+                compositeDisposable.add(playbackStateProcessor
+                        .filter(playbackStateCompat -> playbackStateCompat.getState() == PlaybackStateCompat.STATE_PAUSED)
                         .firstElement()
-                        .subscribe(playbackState -> play(player));
+                        .subscribe(playbackState -> play(player)));
+
             } else {
                 play(player);
             }
@@ -167,8 +134,11 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
             dontBeNoisyBroadcastReceiver.unregisterBroadcast(service);
             // stop notification foreground
             mediaNotificationManager.stopNotification();
-        }
 
+            // local stuff
+            mediaSession.getController().unregisterCallback(callback);
+            compositeDisposable.clear();
+        }
     }
 
 }
