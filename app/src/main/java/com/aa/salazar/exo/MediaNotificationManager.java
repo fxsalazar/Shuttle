@@ -60,8 +60,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private static final int NOTIFICATION_ID = 412;
     private static final int REQUEST_CODE = 100;
 
-    public static final String ACTION_PAUSE = "com.shuttle.pause";
-    public static final String ACTION_PLAY = "com.shuttle.play";
+    public static final String ACTION_PLAY_PAUSE = "com.shuttle.play_pause";
     public static final String ACTION_PREV = "com.shuttle.prev";
     public static final String ACTION_NEXT = "com.shuttle.next";
     public static final String ACTION_STOP = "com.shuttle.stop";
@@ -77,8 +76,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     private final NotificationManager notificationManager;
 
-    private final PendingIntent playIntent;
-    private final PendingIntent pauseIntent;
+    private final PendingIntent playPauseIntent;
     private final PendingIntent previousIntent;
     private final PendingIntent nextIntent;
     private final PendingIntent stopIntent;
@@ -99,10 +97,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
         notificationManager = (NotificationManager) service.getSystemService(Context.NOTIFICATION_SERVICE);
 
         String pkg = service.getPackageName();
-        pauseIntent = PendingIntent.getBroadcast(service, REQUEST_CODE,
-                new Intent(ACTION_PAUSE).setPackage(pkg), PendingIntent.FLAG_CANCEL_CURRENT);
-        playIntent = PendingIntent.getBroadcast(service, REQUEST_CODE,
-                new Intent(ACTION_PLAY).setPackage(pkg), PendingIntent.FLAG_CANCEL_CURRENT);
+        playPauseIntent = PendingIntent.getBroadcast(service, REQUEST_CODE,
+                new Intent(ACTION_PLAY_PAUSE).setPackage(pkg), PendingIntent.FLAG_CANCEL_CURRENT);
         previousIntent = PendingIntent.getBroadcast(service, REQUEST_CODE,
                 new Intent(ACTION_PREV).setPackage(pkg), PendingIntent.FLAG_CANCEL_CURRENT);
         nextIntent = PendingIntent.getBroadcast(service, REQUEST_CODE,
@@ -134,8 +130,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
             if (notification != null) {
                 IntentFilter filter = new IntentFilter();
                 filter.addAction(ACTION_NEXT);
-                filter.addAction(ACTION_PAUSE);
-                filter.addAction(ACTION_PLAY);
+                filter.addAction(ACTION_PLAY_PAUSE);
                 filter.addAction(ACTION_PREV);
                 filter.addAction(ACTION_STOP_CASTING);
                 service.registerReceiver(this, filter);
@@ -169,11 +164,12 @@ public class MediaNotificationManager extends BroadcastReceiver {
         final String action = intent.getAction();
         LogHelper.d(TAG, "Received intent with action " + action);
         switch (action) {
-            case ACTION_PAUSE:
-                transportControls.pause();
-                break;
-            case ACTION_PLAY:
-                transportControls.play();
+            case ACTION_PLAY_PAUSE:
+                if (controller.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
+                    transportControls.pause();
+                } else {
+                    transportControls.play();
+                }
                 break;
             case ACTION_NEXT:
                 transportControls.skipToNext();
@@ -275,20 +271,11 @@ public class MediaNotificationManager extends BroadcastReceiver {
         String fetchArtUrl = null;
         Bitmap art = null;
         if (description.getIconUri() != null) {
-
-
-            // This sample assumes the iconUri will be a valid URL formatted String, but
-            // it can actually be any valid Android Uri formatted String.
-            // async fetch the album art icon
-            // TODO: 31/01/2018 Load album art
             String artUrl = description.getIconUri().toString();
-//            art = AlbumArtCache.getInstance().getBigImage(artUrl);
-//            if (art == null) {
             fetchArtUrl = artUrl;
-//                // use a placeholder art while the remote art is being downloaded
+            // use a placeholder art while the remote art is being downloaded
             art = BitmapFactory.decodeResource(service.getResources(),
                     R.drawable.album_art_placeholder);
-//            }
         }
 
         // Notification channels are only supported on Android O+.
@@ -299,14 +286,33 @@ public class MediaNotificationManager extends BroadcastReceiver {
         final NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(service, CHANNEL_ID);
 
-        final int playPauseButtonPosition = addActions(notificationBuilder);
+//        final int playPauseButtonPosition = addActions(notificationBuilder);
+        boolean isPlaying = controller.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING;
         notificationBuilder
                 .setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
-                        // show only play/pause in compact view
-                        .setShowActionsInCompactView(playPauseButtonPosition)
-                        .setShowCancelButton(true)
-                        .setCancelButtonIntent(stopIntent)
+                        .setShowActionsInCompactView(0, 1, 2)
                         .setMediaSession(sessionToken))
+                .addAction(
+                        R.drawable.ic_skip_previous_24dp,
+                        service.getString(R.string.btn_prev),
+                        previousIntent
+                )
+                .addAction(
+                        isPlaying ? R.drawable.ic_pause_24dp : R.drawable.ic_play_24dp,
+                        service.getString(isPlaying ? R.string.btn_pause : R.string.btn_play),
+                        playPauseIntent
+                )
+                .addAction(
+                        R.drawable.ic_skip_next_24dp,
+                        service.getString(R.string.btn_skip),
+                        nextIntent
+                )
+                // TODO: 04/02/2018 add favorite to notification
+//                .addAction(
+//                        isPlaying ? R.drawable.ic_favorite_24dp_scaled : R.drawable.ic_favorite_border_24dp_scaled,
+//                        service.getString(R.string.fav_add),
+//                        pauseIntent
+//                )
                 .setDeleteIntent(stopIntent)
 //                .setColor(notificationColor)
                 .setSmallIcon(R.drawable.ic_stat_notification)
@@ -358,19 +364,19 @@ public class MediaNotificationManager extends BroadcastReceiver {
         if (playbackState.getState() == PlaybackStateCompat.STATE_PLAYING) {
             label = service.getString(R.string.btn_pause);
             icon = R.drawable.ic_pause_24dp;
-            intent = pauseIntent;
+            intent = playPauseIntent;
         } else {
             label = service.getString(R.string.btn_play);
             icon = R.drawable.ic_play_24dp;
-            intent = playIntent;
+            intent = playPauseIntent;
         }
         notificationBuilder.addAction(new NotificationCompat.Action(icon, label, intent));
 
         // If skip to next action is enabled
-//        if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) {
-        notificationBuilder.addAction(R.drawable.ic_skip_next_24dp,
-                service.getString(R.string.btn_skip), nextIntent);
-//        }
+        if ((playbackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) {
+            notificationBuilder.addAction(R.drawable.ic_skip_next_24dp,
+                    service.getString(R.string.btn_skip), nextIntent);
+        }
 
         return playPauseButtonPosition;
     }
@@ -396,7 +402,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
                     public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
                         LogHelper.d(TAG, "fetchBitmapFromURLAsync: set bitmap to ", bitmapUrl);
                         builder.setLargeIcon(resource);
-                        addActions(builder);
                         notificationManager.notify(NOTIFICATION_ID, builder.build());
                     }
                 }

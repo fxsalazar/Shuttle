@@ -49,6 +49,7 @@ public class PlayerManager {
         @Override
         public void pauseAndStopDelayed() {
             mediaSession.getController().getTransportControls().pause();
+            // TODO: 04/02/2018 implement the delayed stoppage
 //            delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
         }
     };
