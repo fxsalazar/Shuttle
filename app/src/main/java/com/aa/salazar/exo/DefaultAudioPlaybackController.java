@@ -1,6 +1,5 @@
 package com.aa.salazar.exo;
 
-import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.support.annotation.NonNull;
@@ -40,7 +39,6 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             Log.w(TAG, "onPlaybackStateChanged: " + PlaybackStateCompatExtension.getReadableState(state));
             playbackStateProcessor.onNext(state);
-
         }
     };
 
@@ -48,13 +46,12 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
             @NonNull MediaBrowserServiceCompat service,
             @NonNull MediaSessionCompat mediaSession,
             @NonNull MediaNotificationManager mediaNotificationManager,
-            @NonNull AudioFocusManager.ListenerCallback audioFocusManagerListenerCallback,
+            @NonNull AudioFocusManager audioFocusManager,
             @NonNull DontBeNoisyBroadcastReceiver dontBeNoisyBroadcastReceiver) {
         this.service = service;
         this.mediaSession = mediaSession;
         this.mediaNotificationManager = mediaNotificationManager;
-        AudioManager audioManager = (AudioManager) service.getSystemService(Context.AUDIO_SERVICE);
-        audioFocusManager = new AudioFocusManager(audioManager, audioFocusManagerListenerCallback);
+        this.audioFocusManager = audioFocusManager;
         this.dontBeNoisyBroadcastReceiver = dontBeNoisyBroadcastReceiver;
 
     }
@@ -81,23 +78,32 @@ public final class DefaultAudioPlaybackController extends DefaultPlaybackControl
     public void onPlay(Player player) {
         Log.e(TAG, "onPlay: ");
         int audioFocus = audioFocusManager.getAudioFocus();
-        if (audioFocus == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
-            // TODO: 01/02/2018 what to do here?
-            LogHelper.e(TAG, "Request not granted");
-        } else if (audioFocus == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            mediaSession.getController().registerCallback(callback);
-            MediaControllerCompat controller = mediaSession.getController();
-            if (controller.getPlaybackState().getState() == PlaybackStateCompat.STATE_NONE) {
-                // Prepare the first Item on the queue if any
-                controller.getTransportControls().skipToNext();
-                compositeDisposable.add(playbackStateProcessor
-                        .filter(playbackStateCompat -> playbackStateCompat.getState() == PlaybackStateCompat.STATE_PAUSED)
-                        .firstElement()
-                        .subscribe(playbackState -> play(player)));
-
-            } else {
-                play(player);
-            }
+        switch (audioFocus) {
+            case AudioManager.AUDIOFOCUS_REQUEST_FAILED:
+                // TODO: 01/02/2018 what to do here?
+                LogHelper.e(TAG, "AUDIOFOCUS_REQUEST_FAILED");
+                break;
+            case AudioManager.AUDIOFOCUS_REQUEST_GRANTED:
+                MediaControllerCompat controller = mediaSession.getController();
+                if (controller.getPlaybackState().getState() == PlaybackStateCompat.STATE_NONE) {
+                    controller.registerCallback(callback);
+                    // Prepare the first Item on the queue if any
+                    controller.getTransportControls().skipToNext();
+                    compositeDisposable.add(playbackStateProcessor
+                            .filter(playbackStateCompat -> playbackStateCompat.getState() == PlaybackStateCompat.STATE_PAUSED)
+                            .firstElement()
+                            .subscribe(playbackState -> {
+                                play(player);
+                                controller.unregisterCallback(callback);
+                            }));
+                } else {
+                    play(player);
+                }
+                break;
+            case AudioManager.AUDIOFOCUS_REQUEST_DELAYED:
+                // TODO: 04/02/2018 Maybe show a message
+                Log.w(TAG, "onPlay: AUDIOFOCUS_REQUEST_DELAYED");
+                break;
         }
     }
 

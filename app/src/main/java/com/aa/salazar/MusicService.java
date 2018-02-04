@@ -17,46 +17,22 @@
 package com.aa.salazar;
 
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.RemoteException;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.media.MediaBrowserCompat.MediaItem;
 import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
-import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
-import android.support.v7.media.MediaRouter;
 import android.util.Log;
 
-import com.aa.salazar.exo.AudioFocusManager;
-import com.aa.salazar.exo.DefaultAudioPlaybackController;
-import com.aa.salazar.exo.DefaultAudioPlaybackPreparerController;
-import com.aa.salazar.exo.DefaultQueueEditor;
-import com.aa.salazar.exo.DefaultQueueNavigator;
-import com.aa.salazar.exo.DontBeNoisyBroadcastReceiver;
-import com.aa.salazar.exo.MediaNotificationManager;
-import com.aa.salazar.exo.MusicProvider;
-import com.aa.salazar.exo.ShuttleExoPlayer;
-import com.aa.salazar.exo.ShuttlePlayer;
-import com.aa.salazar.playback.CastPlayback;
-import com.aa.salazar.playback.LocalPlayback;
-import com.aa.salazar.playback.Playback;
+import com.aa.salazar.exo.PlayerManager;
 import com.aa.salazar.utils.LogHelper;
-import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.gms.cast.framework.CastContext;
-import com.google.android.gms.cast.framework.CastSession;
-import com.google.android.gms.cast.framework.SessionManager;
-import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.simplecity.amp_library.ui.activities.ShortcutTrampolineActivity;
 
 import java.lang.ref.WeakReference;
@@ -86,100 +62,28 @@ public class MusicService extends MediaBrowserServiceCompat {
     // Delay stopSelf by using a handler.
     private static final int STOP_DELAY = 30000;
 
-    private MusicProvider musicProvider;
     private MediaSessionCompat mediaSession;
-    private MediaNotificationManager mediaNotificationManager;
-    private Bundle sessionExtras;
-    private final DelayedStopHandler delayedStopHandler = new DelayedStopHandler(this);
-    private MediaRouter mediaRouter;
     private PackageValidator packageValidator;
-    private SessionManager castSessionManager;
-    private SessionManagerListener<CastSession> castSessionManagerListener;
-    private ShuttleExoPlayer player;
-    private MediaSessionConnector mediaSessionConnector;
-    private boolean isConnectedToCar;
-    @Nullable
-    private BroadcastReceiver carConnectionReceiver;
-    private ArrayList<MediaSessionCompat.QueueItem> queue = new ArrayList<>();
-    private final AudioFocusManager.ListenerCallback audioFocusManagerListenerCallback = new AudioFocusManager.ListenerCallback() {
-        @Override
-        public void continuePlaybackOrUnDuckVolume() {
-            MediaControllerCompat mediaSessionController = mediaSession.getController();
-            if (mediaSessionController.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING) {
-                player.unDuckVolume();
-            } else {
-                mediaSessionController.getTransportControls().play();
-            }
-        }
-
-        @Override
-        public void duckVolume() {
-            player.duckVolume();
-        }
-
-        @Override
-        public void pausePlayback() {
-            mediaSession.getController().getTransportControls().pause();
-        }
-
-        @Override
-        public void pauseAndStopDelayed() {
-            mediaSession.getController().getTransportControls().pause();
-            delayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
-        }
-    };
+    private PlayerManager playerManager;
+    private final MusicService.DelayedStopHandler delayedStopHandler = new MusicService.DelayedStopHandler(this);
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "onCreate");
-
         packageValidator = new PackageValidator(this);
 
         // Start a new MediaSession
-        mediaSession = new MediaSessionCompat(this, "MusicService");
-        mediaSession.setQueue(queue);
+        mediaSession = new MediaSessionCompat(this, MusicService.class.getSimpleName());
+        mediaSession.setQueue(new ArrayList<>());
         setSessionToken(mediaSession.getSessionToken());
 
-        try {
-            mediaNotificationManager = new MediaNotificationManager(this);
-        } catch (RemoteException e) {
-            throw new IllegalStateException("Could not create a MediaNotificationManager", e);
-        }
-        setupCarAndWearHelper();
-
-        player = ShuttlePlayer.createInstance(ExoPlayerFactory.newSimpleInstance(this, new DefaultTrackSelector()));
-        mediaSessionConnector = new MediaSessionConnector(
-                mediaSession,
-                new DefaultAudioPlaybackController(
-                        this,
-                        mediaSession,
-                        mediaNotificationManager,
-                        audioFocusManagerListenerCallback,
-                        new DontBeNoisyBroadcastReceiver(mediaSession)));
-        mediaSessionConnector.setPlayer(player, new DefaultAudioPlaybackPreparerController());
-        mediaSessionConnector.setQueueEditor(new DefaultQueueEditor(mediaSession));
-        mediaSessionConnector.setQueueNavigator(new DefaultQueueNavigator(this, mediaSession));
+        playerManager = new PlayerManager(this, mediaSession);
 
         Context context = getApplicationContext();
         Intent intent = new Intent(context, ShortcutTrampolineActivity.class);
         PendingIntent pi = PendingIntent.getActivity(context, 99 /*request code*/,
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);
         mediaSession.setSessionActivity(pi);
-
-        // TODO: 29/01/2018 setup castSessionManager
-//        int playServicesAvailable =
-//                GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this);
-//        if (!TvHelper.isTvUiMode(this) && playServicesAvailable == ConnectionResult.SUCCESS) {
-//            castSessionManager = CastContext.getSharedInstance(this).getSessionManager();
-//            castSessionManagerListener = new CastSessionManagerListener();
-//            castSessionManager.addSessionManagerListener(castSessionManagerListener,
-//                    CastSession.class);
-//        }
-
-        mediaRouter = MediaRouter.getInstance(getApplicationContext());
-
-        registerCarConnectionReceiver();
     }
 
     /**
@@ -215,7 +119,7 @@ public class MusicService extends MediaBrowserServiceCompat {
     @Override
     public void onTaskRemoved(Intent rootIntent) {
         super.onTaskRemoved(rootIntent);
-        mediaSession.getController().getTransportControls().stop();
+        stopSelf();
     }
 
     /**
@@ -226,14 +130,7 @@ public class MusicService extends MediaBrowserServiceCompat {
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
-        unregisterCarConnectionReceiver();
         mediaSession.getController().getTransportControls().stop();
-
-        if (castSessionManager != null) {
-            castSessionManager.removeSessionManagerListener(castSessionManagerListener,
-                    CastSession.class);
-        }
-
         delayedStopHandler.removeCallbacksAndMessages(null);
         mediaSession.release();
     }
@@ -255,22 +152,6 @@ public class MusicService extends MediaBrowserServiceCompat {
             return new MediaBrowserServiceCompat.BrowserRoot(MEDIA_ID_EMPTY_ROOT, null);
         }
 
-        // TODO: 29/01/2018  what to do extra with valid package for Auto and Wear
-//        //noinspection StatementWithEmptyBody
-//        if (CarHelper.isValidCarPackage(clientPackageName)) {
-//            // Optional: if your app needs to adapt the music library to show a different subset
-//            // when connected to the car, this is where you should handle it.
-//            // If you want to adapt other runtime behaviors, like tweak ads or change some behavior
-//            // that should be different on cars, you should instead use the boolean flag
-//            // set by the BroadcastReceiver carConnectionReceiver (isConnectedToCar).
-//        }
-//        //noinspection StatementWithEmptyBody
-//        if (WearHelper.isValidWearCompanionPackage(clientPackageName)) {
-//            // Optional: if your app needs to adapt the music library for when browsing from a
-//            // Wear device, you should return a different MEDIA ROOT here, and then,
-//            // on onLoadChildren, handle it accordingly.
-//        }
-
         return new BrowserRoot(MEDIA_ID_ROOT, null);
     }
 
@@ -287,22 +168,17 @@ public class MusicService extends MediaBrowserServiceCompat {
     @Override
     public void onLoadChildren(@NonNull final String parentMediaId,
                                @NonNull final Result<List<MediaItem>> result) {
-        LogHelper.d(TAG, "OnLoadChildren: parentMediaId=", parentMediaId);
-        if (MEDIA_ID_EMPTY_ROOT.equals(parentMediaId)) {
-            result.sendResult(new ArrayList<MediaItem>());
-        } else if (musicProvider.isInitialized()) {
-            // if music library is ready, return immediately
-            result.sendResult(musicProvider.getChildren(parentMediaId, getResources()));
-        } else {
-            // otherwise, only return results when the music library is retrieved
-            result.detach();
-            musicProvider.retrieveMediaAsync(new MusicProvider.Callback() {
-                @Override
-                public void onMusicCatalogReady(boolean success) {
-                    result.sendResult(musicProvider.getChildren(parentMediaId, getResources()));
-                }
-            });
-        }
+//        LogHelper.d(TAG, "OnLoadChildren: parentMediaId=", parentMediaId);
+//        if (MEDIA_ID_EMPTY_ROOT.equals(parentMediaId)) {
+//            result.sendResult(new ArrayList<>());
+//        } else if (musicProvider.isInitialized()) {
+//            // if music library is ready, return immediately
+//            result.sendResult(musicProvider.getChildren(parentMediaId, getResources()));
+//        } else {
+//            // otherwise, only return results when the music library is retrieved
+//            result.detach();
+//            musicProvider.retrieveMediaAsync(success -> result.sendResult(musicProvider.getChildren(parentMediaId, getResources())));
+//        }
     }
 
     /**
@@ -329,103 +205,4 @@ public class MusicService extends MediaBrowserServiceCompat {
             }
         }
     }
-
-
-    //<editor-fold desc="Car and wear">
-
-    private void registerCarConnectionReceiver() {
-        // TODO: 29/01/2018 register CarConnectionReceiver
-//        IntentFilter filter = new IntentFilter(CarHelper.ACTION_MEDIA_STATUS);
-//        carConnectionReceiver = new BroadcastReceiver() {
-//            @Override
-//            public void onReceive(Context context, Intent intent) {
-//                String connectionEvent = intent.getStringExtra(CarHelper.MEDIA_CONNECTION_STATUS);
-//                isConnectedToCar = CarHelper.MEDIA_CONNECTED.equals(connectionEvent);
-//                Log.i(TAG, "Connection event to Android Auto: ", connectionEvent,
-//                        " isConnectedToCar=", isConnectedToCar);
-//            }
-//        };
-//        registerReceiver(carConnectionReceiver, filter);
-    }
-
-    private void unregisterCarConnectionReceiver() {
-        if (carConnectionReceiver != null) {
-            unregisterReceiver(carConnectionReceiver);
-        }
-    }
-
-    // TODO: 29/01/2018 setup car and wear helpers
-    private void setupCarAndWearHelper() {
-//        sessionExtras = new Bundle();
-//        CarHelper.setSlotReservationFlags(sessionExtras, true, true, true);
-//        WearHelper.setSlotReservationFlags(sessionExtras, true, true);
-//        WearHelper.setUseBackgroundFromTheme(sessionExtras, true);
-//        mediaSession.setExtras(sessionExtras);
-    }
-
-    /**
-     * Session Manager Listener responsible for switching the Playback instances
-     * depending on whether it is connected to a remote player.
-     */
-    private class CastSessionManagerListener implements SessionManagerListener<CastSession> {
-
-        @Override
-        public void onSessionEnded(CastSession castSession, int error) {
-            Log.d(TAG, "onSessionEnded");
-            sessionExtras.remove(EXTRA_CONNECTED_CAST);
-            mediaSession.setExtras(sessionExtras);
-            Playback playback = new LocalPlayback(MusicService.this, musicProvider);
-            mediaRouter.setMediaSessionCompat(null);
-            // TODO: 03/02/2018  switchToPlayback
-//            playbackManager.switchToPlayback(player, false);
-        }
-
-        @Override
-        public void onSessionResumed(CastSession session, boolean wasSuspended) {
-        }
-
-        @Override
-        public void onSessionStarted(CastSession castSession, String sessionId) {
-            // In case we are casting, send the device name as an extra on MediaSession metadata.
-            sessionExtras.putString(EXTRA_CONNECTED_CAST,
-                    castSession.getCastDevice().getFriendlyName());
-            mediaSession.setExtras(sessionExtras);
-            // Now we can switch to CastPlayback
-            Playback playback = new CastPlayback(musicProvider, MusicService.this);
-            mediaRouter.setMediaSessionCompat(mediaSession);
-            // TODO: 03/02/2018  switchToPlayback
-//            playbackManager.switchToPlayback(player, true);
-        }
-
-        @Override
-        public void onSessionStarting(CastSession session) {
-        }
-
-        @Override
-        public void onSessionStartFailed(CastSession session, int error) {
-        }
-
-        @Override
-        public void onSessionEnding(CastSession session) {
-            // This is our final chance to update the underlying stream position
-            // In onSessionEnded(), the underlying CastPlayback#mRemoteMediaClient
-            // is disconnected and hence we update our local value of stream position
-            // to the latest position.
-            // TODO: 03/02/2018 what to do
-//            playbackManager.getPlayback().updateLastKnownStreamPosition();
-        }
-
-        @Override
-        public void onSessionResuming(CastSession session, String sessionId) {
-        }
-
-        @Override
-        public void onSessionResumeFailed(CastSession session, int error) {
-        }
-
-        @Override
-        public void onSessionSuspended(CastSession session, int reason) {
-        }
-    }
-    //</editor-fold>
 }

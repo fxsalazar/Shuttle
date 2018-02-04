@@ -47,9 +47,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.aa.salazar.exo.MusicProvider;
-import com.aa.salazar.playback.LocalPlayback;
-import com.aa.salazar.playback.Playback;
+import com.aa.salazar.exo.Playback;
 import com.annimon.stream.function.Predicate;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
@@ -605,7 +603,7 @@ public class MusicService extends Service {
         registerExternalStorageListener();
         registerA2dpServiceListener();
 
-        player = new LocalPlayback(this, new MusicProvider());
+//        player = new LocalPlayback(this, new MusicProvider());
         player.setCallback(new Playback.Callback() {
             @Override
             public void onCompletion() {

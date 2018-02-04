@@ -17,42 +17,40 @@ import com.aa.salazar.utils.LogHelper;
 public class AudioFocusManager {
     private static final String TAG = LogHelper.makeLogTag(AudioFocusManager.class);
     private final AudioManager audioManager;
-    private ListenerCallback listenerCallback;
+    private PlaybackCallback playbackCallback;
     private AudioFocusRequest audioFocusRequest;
     private final AudioManager.OnAudioFocusChangeListener onAudioFocusChangeListener = focusChange -> {
         LogHelper.d(TAG, "onAudioFocusChange. focusChange=", focusChange);
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_GAIN:
-                listenerCallback.continuePlaybackOrUnDuckVolume();
+                playbackCallback.continuePlaybackOrUnDuckVolume();
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest.willPauseWhenDucked()) {
-                    listenerCallback.pausePlayback();
+                    playbackCallback.pausePlayback();
                 } else {
-                    listenerCallback.duckVolume();
+                    playbackCallback.duckVolume();
                 }
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                listenerCallback.pausePlayback();
+                playbackCallback.pausePlayback();
                 break;
             case AudioManager.AUDIOFOCUS_LOSS:
-                listenerCallback.pauseAndStopDelayed();
+                playbackCallback.pauseAndStopDelayed();
                 break;
         }
     };
 
-    public AudioFocusManager(@NonNull AudioManager audioManager, @NonNull ListenerCallback listenerCallback) {
+    public AudioFocusManager(@NonNull AudioManager audioManager, @NonNull PlaybackCallback playbackCallback) {
         this.audioManager = audioManager;
-        this.listenerCallback = listenerCallback;
+        this.playbackCallback = playbackCallback;
     }
 
     public int getAudioFocus() {
-        LogHelper.d(TAG, "tryToGetAudioFocus");
         return requestAudioFocus(audioManager);
     }
 
     public int giveUpAudioFocus() {
-        LogHelper.d(TAG, "giveUpAudioFocus");
         return abandonAudioFocus(audioManager);
     }
 
@@ -91,7 +89,7 @@ public class AudioFocusManager {
         return audioManager.requestAudioFocus(onAudioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
     }
 
-    public interface ListenerCallback {
+    public interface PlaybackCallback {
         void continuePlaybackOrUnDuckVolume();
 
         void duckVolume();

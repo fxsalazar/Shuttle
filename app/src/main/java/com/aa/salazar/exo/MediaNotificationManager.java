@@ -31,6 +31,7 @@ import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.media.MediaBrowserServiceCompat;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -66,7 +67,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
     public static final String ACTION_STOP = "com.shuttle.stop";
     public static final String ACTION_STOP_CASTING = "com.shuttle.stop_cast";
 
-    private final MusicService service;
+    private final MediaBrowserServiceCompat service;
     private MediaSessionCompat.Token sessionToken;
     private MediaControllerCompat controller;
     private MediaControllerCompat.TransportControls transportControls;
@@ -88,7 +89,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
     private boolean started = false;
 
-    public MediaNotificationManager(MusicService service) throws RemoteException {
+    public MediaNotificationManager(MediaBrowserServiceCompat service) throws RemoteException {
         this.service = service;
         updateSessionToken();
 

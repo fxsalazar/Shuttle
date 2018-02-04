@@ -1,7 +1,6 @@
 package com.aa.salazar.exo;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
@@ -91,8 +90,10 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
                 if (Long.parseLong(queueItem.getDescription().getMediaId()) == id) {
                     playQueueItem(player, queueItem);
                     activePosition.set(queueItems.indexOf(queueItem));
+                    return;
                 }
             }
+            Log.e(TAG, "onSkipToQueueItem: Item not found; Check QueueItem's Ids");
         });
     }
 
@@ -104,12 +105,8 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
 
     private void playQueueItem(Player player, MediaSessionCompat.QueueItem queueItem) {
         activeItem.set(Long.parseLong(queueItem.getDescription().getMediaId()));
-        Uri path = queueItem.getDescription().getMediaUri();
-//         Uri path = Uri.parse("/storage/emulated/0/Music/AUD-20160226-WA0018.opus");
-        // The MediaSource represents the media to be played.
-        ((ExoPlayer) player).prepare(factory.createMediaSource(path));
+        ((ExoPlayer) player).prepare(factory.createMediaSource(queueItem.getDescription().getMediaUri()));
     }
-
 
     private void getMediaSessionQueue(@NonNull Consumer<List<MediaSessionCompat.QueueItem>> doWith) {
         MediaControllerCompat controller = mediaSession.getController();
@@ -118,7 +115,7 @@ public class DefaultQueueNavigator implements MediaSessionConnector.QueueNavigat
             try {
                 doWith.accept(queue);
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "getMediaSessionQueue: ", e);
             }
         } else {
             Log.e(TAG, "getMediaSessionQueue: Queue is null/empty");
