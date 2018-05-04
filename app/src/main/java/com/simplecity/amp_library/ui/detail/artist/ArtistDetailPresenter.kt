@@ -7,6 +7,7 @@ import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
 import com.simplecity.amp_library.model.Playlist
 import com.simplecity.amp_library.model.Song
+import com.simplecity.amp_library.playback.MediaManager
 import com.simplecity.amp_library.rx.UnsafeAction
 import com.simplecity.amp_library.ui.presenters.Presenter
 import com.simplecity.amp_library.utils.*
@@ -14,7 +15,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
 
-class ArtistDetailPresenter constructor(private val albumArtist: AlbumArtist) : Presenter<ArtistDetailView>() {
+class ArtistDetailPresenter constructor(private val mediaManager: MediaManager, private val albumArtist: AlbumArtist) : Presenter<ArtistDetailView>() {
 
     private var songs: MutableList<Song> = mutableListOf()
 
@@ -64,25 +65,25 @@ class ArtistDetailPresenter constructor(private val albumArtist: AlbumArtist) : 
     }
 
     fun fabClicked() {
-        MusicUtils.shuffleAll(songs) { message ->
+        mediaManager.shuffleAll(songs) { message ->
             view?.showToast(message)
         }
     }
 
     fun playAll() {
-        MusicUtils.playAll(songs, 0, true) { message ->
+        mediaManager.playAll(songs, 0, true) { message ->
             view?.showToast(message)
         }
     }
 
     fun playNext() {
-        MusicUtils.playNext(songs) { message ->
+        mediaManager.playNext(songs) { message ->
             view?.showToast(message)
         }
     }
 
     fun addToQueue() {
-        MusicUtils.addToQueue(songs) { message ->
+        mediaManager.addToQueue(songs) { message ->
             view?.showToast(message)
         }
     }
@@ -113,7 +114,7 @@ class ArtistDetailPresenter constructor(private val albumArtist: AlbumArtist) : 
     }
 
     fun songClicked(song: Song) {
-        MusicUtils.playAll(songs, songs.indexOf(song), true) { message ->
+        mediaManager.playAll(songs, songs.indexOf(song), true) { message ->
             view?.showToast(message)
         }
     }
