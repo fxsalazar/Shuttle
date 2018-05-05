@@ -153,6 +153,9 @@
         <service
             android:name=".playback.MusicService"
             android:label="@string/app_name"/>
+
+        <service android:name=".playback.salazar.MusicService"/>
+
         <service
             android:name=".services.DashClockService"
             android:icon="@drawable/ic_headphones_white"

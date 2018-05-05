@@ -56,6 +56,7 @@ interface MediaManager {
     /**
      * @return The current shuffle mode
      */
+    @QueueManager.ShuffleMode
     fun getShuffleMode(): Int
 
     /**
@@ -66,6 +67,7 @@ interface MediaManager {
     /**
      * @return The current repeat mode
      */
+    @QueueManager.RepeatMode
     fun getRepeatMode(): Int
 
     /**

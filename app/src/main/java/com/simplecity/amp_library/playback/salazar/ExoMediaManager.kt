@@ -1,11 +1,14 @@
 package com.simplecity.amp_library.playback.salazar
 
 import android.net.Uri
+import android.support.v4.media.MediaDescriptionCompat
+import android.support.v4.media.session.MediaSessionCompat
 import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
 import com.simplecity.amp_library.model.Genre
 import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.playback.MediaManager
+import com.simplecity.amp_library.playback.QueueManager
 import com.simplecity.amp_library.playback.salazar.exo.Playback
 import io.reactivex.Single
 
@@ -21,7 +24,19 @@ class ExoMediaManager: MediaManager {
     }
 
     override fun playAll(songs: MutableList<Song>, position: Int, canClearShuffle: Boolean, onEmpty: (String) -> Unit) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
+        songs.first().apply {
+            val desc = MediaDescriptionCompat.Builder()
+                    .setMediaId(this.id.toString())
+                    .setTitle(this.name)
+                    .setSubtitle(this.albumArtistName)
+                    .setMediaUri(Uri.parse(this.path))
+                    .build()
+
+            val item = MediaSessionCompat.QueueItem(desc,this.id)
+            playbackManager.play(item)
+        }
+
     }
 
     override fun shuffleAll(songsSingle: Single<List<Song>>, onEmpty: (String) -> Unit) {
@@ -41,11 +56,11 @@ class ExoMediaManager: MediaManager {
     }
 
     override fun isPlaying(): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return false
     }
 
     override fun getShuffleMode(): Int {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return QueueManager.ShuffleMode.OFF
     }
 
     override fun setShuffleMode(mode: Int) {
@@ -53,7 +68,7 @@ class ExoMediaManager: MediaManager {
     }
 
     override fun getRepeatMode(): Int {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return QueueManager.RepeatMode.OFF
     }
 
     override fun next() {
@@ -81,7 +96,7 @@ class ExoMediaManager: MediaManager {
     }
 
     override fun getSong(): Song? {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return null
     }
 
     override fun getGenre(): Single<Genre> {
@@ -89,11 +104,11 @@ class ExoMediaManager: MediaManager {
     }
 
     override fun getPosition(): Long {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return 0
     }
 
     override fun getDuration(): Long {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return 0
     }
 
     override fun seekTo(position: Long) {
@@ -133,11 +148,11 @@ class ExoMediaManager: MediaManager {
     }
 
     override fun getQueue(): MutableList<Song> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return mutableListOf()
     }
 
     override fun getQueuePosition(): Int {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return 0
     }
 
     override fun removeFromQueue(position: Int) {

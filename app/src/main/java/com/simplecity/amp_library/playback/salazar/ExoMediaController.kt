@@ -42,7 +42,9 @@ class ExoMediaController(private val mediaControllerCompat: MediaControllerCompa
     }
 
     override fun play(item: MediaSessionCompat.QueueItem?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        mediaControllerCompat?.addQueueItem(item?.description)
+        mediaControllerCompat?.transportControls?.play()
+
     }
 
     override fun play() {

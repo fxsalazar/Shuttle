@@ -1,6 +1,7 @@
 package com.simplecity.amp_library.playback;
 
 import android.annotation.SuppressLint;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import com.simplecity.amp_library.model.Song;
@@ -16,15 +17,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.simplecity.amp_library.playback.QueueManager.RepeatMode.ALL;
+import static com.simplecity.amp_library.playback.QueueManager.RepeatMode.ONE;
+import static com.simplecity.amp_library.playback.QueueManager.ShuffleMode.OFF;
+import static com.simplecity.amp_library.playback.QueueManager.ShuffleMode.ON;
+
 public class QueueManager {
 
     private static final String TAG = "QueueManager";
 
+    @IntDef({OFF, ON})
     public @interface ShuffleMode {
         int OFF = 0;
         int ON = 1;
     }
 
+    @IntDef({QueueManager.RepeatMode.OFF, ONE, ALL})
     public @interface RepeatMode {
         int OFF = 0;
         int ONE = 1;
@@ -45,10 +53,10 @@ public class QueueManager {
     List<Song> shuffleList = new ArrayList<>();
 
     @ShuffleMode
-    int shuffleMode = ShuffleMode.OFF;
+    int shuffleMode = OFF;
 
     @RepeatMode
-    int repeatMode = RepeatMode.OFF;
+    int repeatMode = OFF;
 
     boolean queueReloading;
 
@@ -100,7 +108,7 @@ public class QueueManager {
 
         queuePosition = position;
 
-        if (shuffleMode == QueueManager.ShuffleMode.ON) {
+        if (shuffleMode == ON) {
             makeShuffleList();
         }
 
@@ -153,7 +161,7 @@ public class QueueManager {
         nextPlayPos = -1;
 
         if (!SettingsManager.getInstance().getRememberShuffle()) {
-            setShuffleMode(ShuffleMode.OFF);
+            setShuffleMode(OFF);
         }
 
         notifyQueueChanged();
@@ -161,7 +169,7 @@ public class QueueManager {
 
     @NonNull
     List<Song> getCurrentPlaylist() {
-        if (shuffleMode == ShuffleMode.OFF) {
+        if (shuffleMode == OFF) {
             return playlist;
         } else {
             return shuffleList;
@@ -189,7 +197,7 @@ public class QueueManager {
             }
             return queuePosition;
         } else if (queuePosition >= getCurrentPlaylist().size() - 1) {
-            if (repeatMode == RepeatMode.OFF && !force) {
+            if (repeatMode == OFF && !force) {
                 return -1;
             } else if (repeatMode == RepeatMode.ALL || force) {
                 return 0;
@@ -315,7 +323,7 @@ public class QueueManager {
 
         if (saveQueue) {
             PlaybackSettingsManager.INSTANCE.setQueueList(serializePlaylist(playlist));
-            if (shuffleMode == ShuffleMode.ON) {
+            if (shuffleMode == ON) {
                 PlaybackSettingsManager.INSTANCE.setShuffleList(serializePlaylist(shuffleList));
             }
         }
@@ -351,12 +359,12 @@ public class QueueManager {
                         QueueManager.this.queuePosition = queuePosition;
 
                         if (repeatMode != RepeatMode.ALL && repeatMode != RepeatMode.ONE) {
-                            repeatMode = RepeatMode.OFF;
+                            repeatMode = OFF;
                         }
-                        if (shuffleMode != ShuffleMode.ON) {
-                            shuffleMode = ShuffleMode.OFF;
+                        if (shuffleMode != ON) {
+                            shuffleMode = OFF;
                         }
-                        if (shuffleMode == ShuffleMode.ON) {
+                        if (shuffleMode == ON) {
                             queueList = PlaybackSettingsManager.INSTANCE.getShuffleList();
                             if (queueList != null) {
                                 shuffleList = deserializePlaylist(queueList, songs);
