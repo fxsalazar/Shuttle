@@ -1,10 +1,8 @@
 package com.simplecity.amp_library.search;
 
 import android.app.SearchManager;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.widget.Toast;
 import com.annimon.stream.Stream;
 import com.simplecity.amp_library.model.Album;
@@ -16,9 +14,10 @@ import com.simplecity.amp_library.utils.DataManager;
 import com.simplecity.amp_library.utils.LogUtils;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import kotlin.Unit;
+
 import java.util.Collections;
 import java.util.Locale;
-import kotlin.Unit;
 
 import static com.simplecity.amp_library.utils.StringUtils.containsIgnoreCase;
 
@@ -42,15 +41,11 @@ public class VoiceSearchActivity extends BaseActivity {
     }
 
     @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        super.onServiceConnected(name, service);
+    public void onMediaManagerConnected() {
+        super.onMediaManagerConnected();
         if (intent != null && intent.getAction() != null && intent.getAction().equals("android.media.action.MEDIA_PLAY_FROM_SEARCH")) {
             searchAndPlaySongs();
         }
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
     }
 
     private void searchAndPlaySongs() {
@@ -121,7 +116,7 @@ public class VoiceSearchActivity extends BaseActivity {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(songs -> {
                     if (songs != null) {
-                        mediaManager.playAll(songs, position, true, message -> {
+                        getMediaManager().playAll(songs, position, true, message -> {
                             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
                             return Unit.INSTANCE;
                         });

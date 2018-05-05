@@ -25,6 +25,6 @@ public class ActivityModule {
     @Provides
     @ActivityScope
     MediaManager provideMediaManager() {
-        return ((BaseActivity) activity).getMusicUtils();
+        return ((BaseActivity) activity).getMediaManager();
     }
 }

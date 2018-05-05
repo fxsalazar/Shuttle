@@ -1,13 +1,11 @@
 package com.simplecity.amp_library.ui.activities;
 
 import android.annotation.SuppressLint;
-import android.content.ComponentName;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.view.GravityCompat;
@@ -31,22 +29,18 @@ import com.simplecity.amp_library.ui.dialog.ChangelogDialog;
 import com.simplecity.amp_library.ui.drawer.DrawerProvider;
 import com.simplecity.amp_library.ui.drawer.NavigationEventRelay;
 import com.simplecity.amp_library.ui.fragments.MainController;
-import com.simplecity.amp_library.utils.AnalyticsManager;
-import com.simplecity.amp_library.utils.LogUtils;
-import com.simplecity.amp_library.utils.MusicServiceConnectionUtils;
-import com.simplecity.amp_library.utils.PlaylistUtils;
-import com.simplecity.amp_library.utils.SettingsManager;
-import com.simplecity.amp_library.utils.ThemeUtils;
+import com.simplecity.amp_library.utils.*;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
 import kotlin.Unit;
 import test.com.androidnavigation.fragment.BackPressHandler;
 import test.com.androidnavigation.fragment.BackPressListener;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends BaseCastActivity implements
         ToolbarListener,
@@ -121,9 +115,8 @@ public class MainActivity extends BaseCastActivity implements
     }
 
     @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        super.onServiceConnected(name, service);
-
+    public void onMediaManagerConnected() {
+        super.onMediaManagerConnected();
         handlePendingPlaybackRequest();
     }
 
@@ -179,7 +172,7 @@ public class MainActivity extends BaseCastActivity implements
         final String mimeType = intent.getType();
 
         if (uri != null && uri.toString().length() > 0) {
-            mediaManager.playFile(uri);
+            getMediaManager().playFile(uri);
             // Make sure to process intent only once
             setIntent(new Intent());
         } else if (MediaStore.Audio.Playlists.CONTENT_TYPE.equals(mimeType)) {
@@ -191,7 +184,7 @@ public class MainActivity extends BaseCastActivity implements
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(playlist -> {
-                            mediaManager.playAll(playlist.getSongsObservable().first(new ArrayList<>()),
+                            getMediaManager().playAll(playlist.getSongsObservable().first(new ArrayList<>()),
                                     message -> {
                                         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
                                         return Unit.INSTANCE;

@@ -1,15 +1,9 @@
 package com.simplecity.amp_library.ui.activities;
 
 import android.annotation.TargetApi;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.ContentResolver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.*;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -223,12 +217,12 @@ public class QCircleActivity extends BaseActivity {
         pauseBtn = findViewById(R.id.btn_pause);
         setPauseButtonImage();
 
-        prevBtn.setOnClickListener(v -> mediaManager.previous(true));
+        prevBtn.setOnClickListener(v -> getMediaManager().previous(true));
 
-        skipBtn.setOnClickListener(v -> mediaManager.next());
+        skipBtn.setOnClickListener(v -> getMediaManager().next());
 
         pauseBtn.setOnClickListener(v -> {
-            mediaManager.playOrPause();
+            getMediaManager().playOrPause();
             setPauseButtonImage();
         });
     }
@@ -243,7 +237,7 @@ public class QCircleActivity extends BaseActivity {
         if (pauseBtn == null) {
             return;
         }
-        if (MusicServiceConnectionUtils.serviceBinder != null && mediaManager.isPlaying()) {
+        if (MusicServiceConnectionUtils.serviceBinder != null && getMediaManager().isPlaying()) {
 
         } else {
 
@@ -260,7 +254,7 @@ public class QCircleActivity extends BaseActivity {
             return;
         }
 
-        Song song = mediaManager.getSong();
+        Song song = getMediaManager().getSong();
         if (song == null) return;
 
         textOne.setText(song.albumArtistName);
@@ -307,8 +301,8 @@ public class QCircleActivity extends BaseActivity {
     };
 
     @Override
-    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-        super.onServiceConnected(componentName, iBinder);
+    public void onMediaManagerConnected() {
+        super.onMediaManagerConnected();
         updateTrackInfo();
     }
 

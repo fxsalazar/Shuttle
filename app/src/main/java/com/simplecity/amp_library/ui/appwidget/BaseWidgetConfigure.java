@@ -1,13 +1,11 @@
 package com.simplecity.amp_library.ui.appwidget;
 
 import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
@@ -23,14 +21,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.RemoteViews;
-import android.widget.SeekBar;
-import android.widget.TextView;
+import android.widget.*;
 import com.afollestad.aesthetic.Aesthetic;
 import com.afollestad.materialdialogs.color.ColorChooserDialog;
 import com.bumptech.glide.Glide;
@@ -261,9 +252,9 @@ public abstract class BaseWidgetConfigure extends BaseActivity implements
     }
 
     @Override
-    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+    public void onMediaManagerConnected() {
         updateWidgetUI();
-        super.onServiceConnected(componentName, iBinder);
+        super.onMediaManagerConnected();
     }
 
     private class WidgetPagerAdapter extends FragmentStatePagerAdapter {
@@ -327,9 +318,9 @@ public abstract class BaseWidgetConfigure extends BaseActivity implements
                 TextView text1 = widgetLayout.findViewById(R.id.text1);
                 TextView text2 = widgetLayout.findViewById(R.id.text2);
                 TextView text3 = widgetLayout.findViewById(R.id.text3);
-                String trackName = mediaManager.getSong().name;
-                String artistName = mediaManager.getSong().albumArtistName;
-                final String albumName = mediaManager.getSong().albumName;
+                String trackName = getMediaManager().getSong().name;
+                String artistName = getMediaManager().getSong().albumArtistName;
+                final String albumName = getMediaManager().getSong().albumName;
                 if (trackName != null && text1 != null) {
                     text1.setText(trackName);
                     text1.setTextColor(textColor);
@@ -368,7 +359,7 @@ public abstract class BaseWidgetConfigure extends BaseActivity implements
                     }
 
                     Glide.with(this)
-                            .load(mediaManager.getSong())
+                            .load(getMediaManager().getSong())
                             .diskCacheStrategy(DiskCacheStrategy.ALL)
                             .placeholder(R.drawable.ic_placeholder_light_medium)
                             .into(albumArt);

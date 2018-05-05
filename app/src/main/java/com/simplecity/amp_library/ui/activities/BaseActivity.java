@@ -1,13 +1,9 @@
 package com.simplecity.amp_library.ui.activities;
 
-import android.Manifest;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -23,47 +19,29 @@ import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.billing.BillingManager;
 import com.simplecity.amp_library.constants.Config;
 import com.simplecity.amp_library.playback.MediaManager;
+import com.simplecity.amp_library.playback.MediaManagerLifecycle;
 import com.simplecity.amp_library.playback.constants.InternalIntents;
 import com.simplecity.amp_library.ui.dialog.UpgradeDialog;
 import com.simplecity.amp_library.utils.MusicServiceConnectionUtils;
-import com.simplecity.amp_library.utils.MusicUtils;
 import com.simplecity.amp_library.utils.SettingsManager;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 
-public abstract class BaseActivity extends AestheticActivity implements ServiceConnection {
-
-    @Nullable
-    private MusicServiceConnectionUtils.ServiceToken token;
+public abstract class BaseActivity extends AestheticActivity implements MediaManagerLifecycle.Callback {
 
     @Nullable
     private BillingManager billingManager;
 
-    protected MediaManager mediaManager = new MusicUtils();
+    private MediaManagerLifecycle mediaManagerLifecycle;
 
     @CallSuper
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Permiso.getInstance().setActivity(this);
-
-        Permiso.getInstance().requestPermissions(new Permiso.IOnPermissionResult() {
-            @Override
-            public void onPermissionResult(Permiso.ResultSet resultSet) {
-                if (resultSet.areAllPermissionsGranted()) {
-                    bindService();
-                } else {
-                    Toast.makeText(BaseActivity.this, "Permission check failed", Toast.LENGTH_LONG).show();
-                    finish();
-                }
-            }
-
-            @Override
-            public void onRationaleRequested(Permiso.IOnRationaleProvided callback, String... permissions) {
-                callback.onRationaleProvided();
-            }
-        }, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.WAKE_LOCK);
+        this.mediaManagerLifecycle = new MusicServiceConnectionUtils(this, this);
 
         billingManager = new BillingManager(this, new BillingManager.BillingUpdatesListener() {
             @Override
@@ -96,10 +74,6 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
         keepScreenOn(SettingsManager.getInstance().keepScreenOn());
         super.onResume();
 
-        if (token == null) {
-            bindService();
-        }
-
         Permiso.getInstance().setActivity(this);
 
         if (billingManager != null && billingManager.getBillingClientResponseCode() == BillingClient.BillingResponse.OK) {
@@ -115,8 +89,6 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
 
     @Override
     protected void onDestroy() {
-        unbindService();
-
         if (billingManager != null) {
             billingManager.destroy();
         }
@@ -127,28 +99,6 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
     @Nullable
     public BillingManager getBillingManager() {
         return billingManager;
-    }
-
-    void bindService() {
-        token = MusicServiceConnectionUtils.bindToService(this, this);
-    }
-
-    void unbindService() {
-        if (token != null) {
-            MusicServiceConnectionUtils.unbindFromService(token);
-            token = null;
-        }
-    }
-
-    @Override
-    @CallSuper
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        sendBroadcast(new Intent(InternalIntents.SERVICE_CONNECTED));
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-        unbindService();
     }
 
     @Override
@@ -181,7 +131,23 @@ public abstract class BaseActivity extends AestheticActivity implements ServiceC
 
     protected abstract String screenName();
 
-    public MediaManager getMusicUtils() {
-        return mediaManager;
+    @NonNull
+    public MediaManager getMediaManager() {
+        return mediaManagerLifecycle.getMediaManager();
+    }
+
+    @Override
+    public void onMediaManagerConnected() {
+        sendBroadcast(new Intent(InternalIntents.SERVICE_CONNECTED));
+    }
+
+    @Override
+    public void onMediaManagerConnectionSuspended() {
+        Toast.makeText(this, "Service Connection Suspended",Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onMediaManagerConnectionError(@NotNull Exception exception) {
+        Toast.makeText(this, exception.getMessage(),Toast.LENGTH_LONG).show();
     }
 }
