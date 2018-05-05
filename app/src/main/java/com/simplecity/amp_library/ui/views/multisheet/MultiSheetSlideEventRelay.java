@@ -5,10 +5,15 @@ import com.jakewharton.rxrelay2.BehaviorRelay;
 import com.simplecity.multisheetview.ui.view.MultiSheetView.Sheet;
 import io.reactivex.Observable;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+@Singleton
 public class MultiSheetSlideEventRelay {
 
     private final BehaviorRelay<SlideEvent> eventRelay = BehaviorRelay.create();
 
+    @Inject
     public MultiSheetSlideEventRelay() {
     }
 
@@ -49,7 +54,5 @@ public class MultiSheetSlideEventRelay {
         public boolean nowPlayingCollapsed() {
             return sheet == Sheet.FIRST && state == BottomSheetBehavior.STATE_COLLAPSED;
         }
-
     }
-
 }

@@ -85,7 +85,7 @@ class GenreDetailPresenter constructor(private val mediaManager: MediaManager, p
             .delay(if (currentSlideShowAlbum == null) 0L else 8L, TimeUnit.SECONDS)
 
         addDisposable(Observable
-            .combineLatest(a, b, BiFunction { albums: List<Album>, _: Long -> albums })
+            .combineLatest(a, b, BiFunction { albums: List<Album>, aLong: Long -> albums })
             .map { albums ->
                 if (albums.isEmpty()) {
                     currentSlideShowAlbum

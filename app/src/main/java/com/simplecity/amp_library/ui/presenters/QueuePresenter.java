@@ -14,9 +14,8 @@ import com.simplecity.amp_library.ui.views.QueueView;
 import com.simplecity.amp_library.utils.PlaylistUtils;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-
-import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 
 public class QueuePresenter extends Presenter<QueueView> {
 

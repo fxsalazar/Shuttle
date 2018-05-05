@@ -19,12 +19,25 @@ import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.dagger.module.ActivityModule;
 import com.simplecity.amp_library.dagger.module.FragmentModule;
-import com.simplecity.amp_library.model.*;
+import com.simplecity.amp_library.model.Album;
+import com.simplecity.amp_library.model.AlbumArtist;
+import com.simplecity.amp_library.model.Playlist;
+import com.simplecity.amp_library.model.Song;
+import com.simplecity.amp_library.model.SuggestedHeader;
 import com.simplecity.amp_library.ui.adapters.ViewType;
 import com.simplecity.amp_library.ui.detail.playlist.PlaylistDetailFragment;
-import com.simplecity.amp_library.ui.modelviews.*;
+import com.simplecity.amp_library.ui.modelviews.AlbumView;
+import com.simplecity.amp_library.ui.modelviews.EmptyView;
+import com.simplecity.amp_library.ui.modelviews.HorizontalRecyclerView;
+import com.simplecity.amp_library.ui.modelviews.SuggestedHeaderView;
+import com.simplecity.amp_library.ui.modelviews.SuggestedSongView;
 import com.simplecity.amp_library.ui.views.SuggestedDividerDecoration;
-import com.simplecity.amp_library.utils.*;
+import com.simplecity.amp_library.utils.ComparisonUtils;
+import com.simplecity.amp_library.utils.DataManager;
+import com.simplecity.amp_library.utils.LogUtils;
+import com.simplecity.amp_library.utils.Operators;
+import com.simplecity.amp_library.utils.PermissionUtils;
+import com.simplecity.amp_library.utils.ShuttleUtils;
 import com.simplecity.amp_library.utils.menu.album.AlbumMenuFragmentHelper;
 import com.simplecity.amp_library.utils.menu.album.AlbumMenuUtils;
 import com.simplecity.amp_library.utils.menu.song.SongMenuFragmentHelper;
@@ -36,13 +49,12 @@ import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import kotlin.Unit;
-
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
+import kotlin.Unit;
 
 public class SuggestedFragment extends BaseFragment implements
         SuggestedHeaderView.ClickListener,
@@ -64,7 +76,7 @@ public class SuggestedFragment extends BaseFragment implements
 
         List<Song> songs;
 
-        public SongClickListener( List<Song> songs) {
+        public SongClickListener(List<Song> songs) {
             this.songs = songs;
         }
 
@@ -265,7 +277,8 @@ public class SuggestedFragment extends BaseFragment implements
                     if (!albums.isEmpty()) {
                         List<ViewModel> viewModels = new ArrayList<>();
 
-                        SuggestedHeader recentlyPlayedHeader = new SuggestedHeader(getString(R.string.suggested_recent_title), getString(R.string.suggested_recent_subtitle), Playlist.recentlyPlayedPlaylist);
+                        SuggestedHeader recentlyPlayedHeader =
+                                new SuggestedHeader(getString(R.string.suggested_recent_title), getString(R.string.suggested_recent_subtitle), Playlist.recentlyPlayedPlaylist);
                         SuggestedHeaderView recentlyPlayedHeaderView = new SuggestedHeaderView(recentlyPlayedHeader);
                         recentlyPlayedHeaderView.setClickListener(this);
                         viewModels.add(recentlyPlayedHeaderView);
@@ -333,7 +346,8 @@ public class SuggestedFragment extends BaseFragment implements
                     if (!albums.isEmpty()) {
                         List<ViewModel> viewModels = new ArrayList<>();
 
-                        SuggestedHeader recentlyAddedHeader = new SuggestedHeader(getString(R.string.recentlyadded), getString(R.string.suggested_recently_added_subtitle), Playlist.recentlyAddedPlaylist);
+                        SuggestedHeader recentlyAddedHeader =
+                                new SuggestedHeader(getString(R.string.recentlyadded), getString(R.string.suggested_recently_added_subtitle), Playlist.recentlyAddedPlaylist);
                         SuggestedHeaderView recentlyAddedHeaderView = new SuggestedHeaderView(recentlyAddedHeader);
                         recentlyAddedHeaderView.setClickListener(this);
                         viewModels.add(recentlyAddedHeaderView);

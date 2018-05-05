@@ -11,7 +11,6 @@ import com.simplecity.amp_library.utils.MusicUtils;
 import com.simplecity.amp_library.utils.PlaylistUtils;
 import com.simplecity.amp_library.utils.menu.MenuUtils;
 import io.reactivex.Single;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -59,10 +58,10 @@ public class SongMenuUtils {
     public static Toolbar.OnMenuItemClickListener getQueueMenuClickListener(Context context, Single<List<Song>> songsSingle, Callbacks callbacks) {
         return item -> {
             switch (item.getItemId()) {
-                case MusicUtils.Defs.NEW_PLAYLIST:
+                case MediaManager.NEW_PLAYLIST:
                     MenuUtils.newPlaylist(context, songsSingle, callbacks::onPlaylistItemsInserted);
                     return true;
-                case MusicUtils.Defs.PLAYLIST_SELECTED:
+                case MediaManager.PLAYLIST_SELECTED:
                     MenuUtils.addToPlaylist(context, item, songsSingle, callbacks::onPlaylistItemsInserted);
                     return true;
                 case R.id.delete:
@@ -79,10 +78,10 @@ public class SongMenuUtils {
     public static Toolbar.OnMenuItemClickListener getSongMenuClickListener(Context context, MediaManager mediaManager, Single<List<Song>> songsSingle, Callbacks callbacks) {
         return item -> {
             switch (item.getItemId()) {
-                case MusicUtils.Defs.NEW_PLAYLIST:
+                case MediaManager.NEW_PLAYLIST:
                     MenuUtils.newPlaylist(context, songsSingle, callbacks::onPlaylistItemsInserted);
                     return true;
-                case MusicUtils.Defs.PLAYLIST_SELECTED:
+                case MediaManager.PLAYLIST_SELECTED:
                     MenuUtils.addToPlaylist(context, item, songsSingle, callbacks::onPlaylistItemsInserted);
                     return true;
                 case R.id.playNext:
@@ -108,10 +107,10 @@ public class SongMenuUtils {
                 case R.id.playNext:
                     MenuUtils.playNext(mediaManager, song, callbacks::showToast);
                     return true;
-                case MusicUtils.Defs.NEW_PLAYLIST:
+                case MediaManager.NEW_PLAYLIST:
                     MenuUtils.newPlaylist(context, Collections.singletonList(song), callbacks::onPlaylistItemsInserted);
                     return true;
-                case MusicUtils.Defs.PLAYLIST_SELECTED:
+                case MediaManager.PLAYLIST_SELECTED:
                     MenuUtils.addToPlaylist(context, item, Collections.singletonList(song), callbacks::onPlaylistItemsInserted);
                     return true;
                 case R.id.addToQueue:

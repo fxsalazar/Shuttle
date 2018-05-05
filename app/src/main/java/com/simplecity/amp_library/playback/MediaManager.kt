@@ -7,18 +7,12 @@ import com.simplecity.amp_library.model.Genre
 import com.simplecity.amp_library.model.Song
 import io.reactivex.Single
 
-/**
- * Created by fxsalazar
- * 01/05/2018.
- */
 interface MediaManager {
 
-    interface Defs {
-        companion object {
-            val ADD_TO_PLAYLIST = 0
-            val PLAYLIST_SELECTED = 1
-            val NEW_PLAYLIST = 2
-        }
+    companion object Defs {
+        const val ADD_TO_PLAYLIST = 0
+        const val PLAYLIST_SELECTED = 1
+        const val NEW_PLAYLIST = 2
     }
 
     /**

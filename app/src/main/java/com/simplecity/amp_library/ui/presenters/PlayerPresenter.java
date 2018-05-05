@@ -25,9 +25,8 @@ import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-
-import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
+import javax.inject.Inject;
 
 public class PlayerPresenter extends Presenter<PlayerView> {
 
@@ -122,7 +121,6 @@ public class PlayerPresenter extends Presenter<PlayerView> {
                     }
                 }, error -> LogUtils.logException(TAG, "PlayerPresenter: Error sending broadcast", error)));
     }
-
 
     private void refreshTimeText(long playbackTime) {
         if (playbackTime != currentPlaybackTime) {

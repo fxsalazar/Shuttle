@@ -26,6 +26,7 @@ import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.dagger.module.ActivityModule;
 import com.simplecity.amp_library.dagger.module.FragmentModule;
 import com.simplecity.amp_library.model.Song;
+import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.tagger.TaggerDialog;
 import com.simplecity.amp_library.ui.dialog.DeleteDialog;
 import com.simplecity.amp_library.ui.dialog.UpgradeDialog;
@@ -39,8 +40,13 @@ import com.simplecity.amp_library.ui.views.PlayerViewAdapter;
 import com.simplecity.amp_library.ui.views.QueueView;
 import com.simplecity.amp_library.ui.views.ThemedStatusBarView;
 import com.simplecity.amp_library.ui.views.multisheet.MultiSheetSlideEventRelay;
-import com.simplecity.amp_library.utils.*;
+import com.simplecity.amp_library.utils.ContextualToolbarHelper;
 import com.simplecity.amp_library.utils.ContextualToolbarHelper.Callback;
+import com.simplecity.amp_library.utils.MusicUtils;
+import com.simplecity.amp_library.utils.PermissionUtils;
+import com.simplecity.amp_library.utils.PlaylistUtils;
+import com.simplecity.amp_library.utils.ResourceUtils;
+import com.simplecity.amp_library.utils.ShuttleUtils;
 import com.simplecity.amp_library.utils.menu.song.SongMenuFragmentHelper;
 import com.simplecity.amp_library.utils.menu.song.SongMenuUtils;
 import com.simplecity.multisheetview.ui.view.MultiSheetView;
@@ -52,9 +58,8 @@ import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-
-import javax.inject.Inject;
 import java.util.List;
+import javax.inject.Inject;
 
 public class QueueFragment extends BaseFragment implements QueueView {
 
@@ -137,7 +142,7 @@ public class QueueFragment extends BaseFragment implements QueueView {
         toolbar.setNavigationOnClickListener(v -> getActivity().onBackPressed());
         toolbar.inflateMenu(R.menu.menu_queue);
 
-        SubMenu sub = toolbar.getMenu().addSubMenu(0, MusicUtils.Defs.ADD_TO_PLAYLIST, 1, R.string.save_as_playlist);
+        SubMenu sub = toolbar.getMenu().addSubMenu(0, MediaManager.ADD_TO_PLAYLIST, 1, R.string.save_as_playlist);
         disposables.add(PlaylistUtils.createUpdatingPlaylistMenu(sub).subscribe());
 
         toolbar.setOnMenuItemClickListener(toolbarListener);
@@ -370,10 +375,10 @@ public class QueueFragment extends BaseFragment implements QueueView {
             case R.id.menu_clear:
                 queuePresenter.clearQueue();
                 return true;
-            case MusicUtils.Defs.NEW_PLAYLIST:
+            case MediaManager.NEW_PLAYLIST:
                 queuePresenter.saveQueue(getContext());
                 return true;
-            case MusicUtils.Defs.PLAYLIST_SELECTED:
+            case MediaManager.PLAYLIST_SELECTED:
                 queuePresenter.saveQueue(getContext(), item);
                 return true;
         }

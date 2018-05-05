@@ -15,9 +15,8 @@ import com.simplecity.amp_library.ui.views.QueuePagerView;
 import com.simplecityapps.recycler_adapter.model.ViewModel;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-
-import javax.inject.Inject;
 import java.util.List;
+import javax.inject.Inject;
 
 public class QueuePagerPresenter extends Presenter<QueuePagerView> {
 

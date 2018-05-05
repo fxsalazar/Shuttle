@@ -13,23 +13,16 @@ import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.playback.QueueManager;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 public class MusicUtils implements MediaManager {
 
     private static final String TAG = "MusicUtils";
-
-    public interface Defs {
-        int ADD_TO_PLAYLIST = 0;
-        int PLAYLIST_SELECTED = 1;
-        int NEW_PLAYLIST = 2;
-    }
 
     public void playAll(@NonNull Single<List<Song>> songsSingle, @NotNull Function1<? super String, Unit> onEmpty) {
         songsSingle
@@ -69,11 +62,7 @@ public class MusicUtils implements MediaManager {
     }
 
     /**
-     *
      * {@inheritDoc}
-     *
-     * @param songs
-     * @param onEmpty
      */
     public void shuffleAll(@NotNull List<Song> songs, @NotNull Function1<? super String, Unit> onEmpty) {
         if (!songs.isEmpty()) {
@@ -115,7 +104,8 @@ public class MusicUtils implements MediaManager {
     }
 
     public boolean isPlaying() {
-        return MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null && MusicServiceConnectionUtils.serviceBinder.getService().isPlaying();
+        return MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null && MusicServiceConnectionUtils.serviceBinder.getService()
+                .isPlaying();
     }
 
     public int getShuffleMode() {
