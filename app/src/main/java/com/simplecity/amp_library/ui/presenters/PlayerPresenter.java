@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import com.cantrowitz.rxbroadcast.RxBroadcast;
 import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.lyrics.LyricsDialog;
@@ -25,8 +26,9 @@ import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-import java.util.concurrent.TimeUnit;
+
 import javax.inject.Inject;
+import java.util.concurrent.TimeUnit;
 
 public class PlayerPresenter extends Presenter<PlayerView> {
 
@@ -43,7 +45,7 @@ public class PlayerPresenter extends Presenter<PlayerView> {
     private final PlaybackMonitor playbackMonitor;
 
     @Inject
-    public PlayerPresenter(MediaManager mediaManager) {
+    public PlayerPresenter(@Nullable MediaManager mediaManager) {
         this.mediaManager = mediaManager;
         this.playbackMonitor = new PlaybackMonitor(mediaManager);
     }

@@ -72,6 +72,16 @@ object Dependencies {
     // In app purchases
     const val billing = "com.android.billingclient:billing:${Versions.billing}"
 
+    object ExoPlayer {
+
+        object Versions {
+            const val exoPlayer = "2.7.3"
+        }
+
+        const val core = "com.google.android.exoplayer:exoplayer-core:${Versions.exoPlayer}"
+        const val mediasession = "com.google.android.exoplayer:extension-mediasession:${Versions.exoPlayer}"
+    }
+
 
     object Plugins {
 

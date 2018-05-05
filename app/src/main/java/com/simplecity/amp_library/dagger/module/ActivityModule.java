@@ -1,6 +1,7 @@
 package com.simplecity.amp_library.dagger.module;
 
 import android.app.Activity;
+import android.support.annotation.Nullable;
 import com.simplecity.amp_library.dagger.scope.ActivityScope;
 import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.ui.activities.BaseActivity;
@@ -24,6 +25,7 @@ public class ActivityModule {
 
     @Provides
     @ActivityScope
+    @Nullable
     MediaManager provideMediaManager() {
         return ((BaseActivity) activity).getMediaManager();
     }

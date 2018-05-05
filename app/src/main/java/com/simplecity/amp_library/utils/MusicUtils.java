@@ -11,14 +11,16 @@ import com.simplecity.amp_library.model.Genre;
 import com.simplecity.amp_library.model.Song;
 import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.playback.QueueManager;
+import com.simplecity.amp_library.playback.salazar.exo.Playback;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class MusicUtils implements MediaManager {
 
@@ -367,5 +369,16 @@ public class MusicUtils implements MediaManager {
         if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
             MusicServiceConnectionUtils.serviceBinder.getService().updateEqualizer();
         }
+    }
+
+    @NotNull
+    @Override
+    public Playback getPlaybackManager() {
+        return null;
+    }
+
+    @Override
+    public void setPlaybackManager(@NotNull Playback playback) {
+
     }
 }

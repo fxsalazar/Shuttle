@@ -5,6 +5,7 @@ import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
 import com.simplecity.amp_library.model.Genre
 import com.simplecity.amp_library.model.Song
+import com.simplecity.amp_library.playback.salazar.exo.Playback
 import io.reactivex.Single
 
 interface MediaManager {
@@ -14,6 +15,8 @@ interface MediaManager {
         const val PLAYLIST_SELECTED = 1
         const val NEW_PLAYLIST = 2
     }
+
+    var playbackManager: Playback
 
     /**
      * Sends a list of songs to the MusicService for playback

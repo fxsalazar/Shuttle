@@ -265,6 +265,8 @@ dependencies {
     implementation Dependencies.materialDialogCommons
     implementation Dependencies.expandableRecyclerView
     implementation Dependencies.billing
+    implementation Dependencies.ExoPlayer.core
+    implementation Dependencies.ExoPlayer.mediasession
 
     implementation Dependencies.butterknife
     annotationProcessor Dependencies.butterknifeAnnotationProcessor

@@ -37,7 +37,6 @@ public class MusicServiceConnectionUtils implements MediaManagerLifecycle, Servi
      * @param callback The {@link ServiceConnection} to use
      */
     public MusicServiceConnectionUtils(@NonNull final BaseActivity activity, @NonNull final MediaManagerLifecycle.Callback callback) {
-        Permiso.getInstance().setActivity(activity);
         this.activity = activity;
         this.callback = callback;
         activity.getLifecycle().addObserver(this);

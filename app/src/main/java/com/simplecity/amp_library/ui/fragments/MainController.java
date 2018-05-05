@@ -31,11 +31,7 @@ import com.simplecity.amp_library.ui.detail.album.AlbumDetailFragment;
 import com.simplecity.amp_library.ui.detail.artist.ArtistDetailFragment;
 import com.simplecity.amp_library.ui.detail.genre.GenreDetailFragment;
 import com.simplecity.amp_library.ui.detail.playlist.PlaylistDetailFragment;
-import com.simplecity.amp_library.ui.drawer.DrawerLockController;
-import com.simplecity.amp_library.ui.drawer.DrawerLockManager;
-import com.simplecity.amp_library.ui.drawer.DrawerProvider;
-import com.simplecity.amp_library.ui.drawer.MiniPlayerLockManager;
-import com.simplecity.amp_library.ui.drawer.NavigationEventRelay;
+import com.simplecity.amp_library.ui.drawer.*;
 import com.simplecity.amp_library.ui.presenters.PlayerPresenter;
 import com.simplecity.amp_library.ui.settings.SettingsParentFragment;
 import com.simplecity.amp_library.ui.views.UpNextView;
@@ -47,11 +43,12 @@ import com.simplecity.multisheetview.ui.view.MultiSheetView;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
-import java.util.List;
-import javax.inject.Inject;
 import test.com.androidnavigation.fragment.BackPressHandler;
 import test.com.androidnavigation.fragment.BaseNavigationController;
 import test.com.androidnavigation.fragment.FragmentInfo;
+
+import javax.inject.Inject;
+import java.util.List;
 
 public class MainController extends BaseNavigationController implements BackPressHandler, DrawerLockController {
 
@@ -65,6 +62,7 @@ public class MainController extends BaseNavigationController implements BackPres
     @Inject
     MultiSheetEventRelay multiSheetEventRelay;
 
+    @Nullable
     @Inject
     MediaManager mediaManager;
 

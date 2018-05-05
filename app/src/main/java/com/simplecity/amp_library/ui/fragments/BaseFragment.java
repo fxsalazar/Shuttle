@@ -23,9 +23,10 @@ import com.simplecity.amp_library.ui.views.CustomMediaRouteActionProvider;
 import com.simplecity.amp_library.ui.views.multisheet.MultiSheetEventRelay;
 import com.simplecity.amp_library.utils.AnalyticsManager;
 import com.squareup.leakcanary.RefWatcher;
-import java.lang.reflect.Field;
-import javax.inject.Inject;
 import test.com.androidnavigation.fragment.BaseController;
+
+import javax.inject.Inject;
+import java.lang.reflect.Field;
 
 public abstract class BaseFragment extends BaseController {
 
@@ -37,6 +38,7 @@ public abstract class BaseFragment extends BaseController {
     @Inject
     MultiSheetEventRelay multiSheetEventRelay;
 
+    @Nullable
     @Inject
     protected MediaManager mediaManager;
 

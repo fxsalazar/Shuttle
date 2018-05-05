@@ -15,7 +15,5 @@ interface MediaManagerLifecycle : LifecycleObserver {
         fun onMediaManagerConnectionError(exception: Exception)
     }
 
-    fun bindToService()
-
-    fun getMediaManager(): MediaManager
+    val mediaManager : MediaManager
 }

@@ -21,8 +21,9 @@ import com.simplecity.amp_library.constants.Config;
 import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.playback.MediaManagerLifecycle;
 import com.simplecity.amp_library.playback.constants.InternalIntents;
+import com.simplecity.amp_library.playback.salazar.ExoMediaLifecycleManager;
+import com.simplecity.amp_library.playback.salazar.MusicService;
 import com.simplecity.amp_library.ui.dialog.UpgradeDialog;
-import com.simplecity.amp_library.utils.MusicServiceConnectionUtils;
 import com.simplecity.amp_library.utils.SettingsManager;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,8 +41,9 @@ public abstract class BaseActivity extends AestheticActivity implements MediaMan
     @CallSuper
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        this.mediaManagerLifecycle = new MusicServiceConnectionUtils(this, this);
+        Permiso.getInstance().setActivity(this);
+//        this.mediaManagerLifecycle = new MusicServiceConnectionUtils(this, this);
+        this.mediaManagerLifecycle = new ExoMediaLifecycleManager(this, this, MusicService.class);
 
         billingManager = new BillingManager(this, new BillingManager.BillingUpdatesListener() {
             @Override
