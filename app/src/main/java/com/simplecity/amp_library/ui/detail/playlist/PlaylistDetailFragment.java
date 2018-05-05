@@ -18,7 +18,11 @@ import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.transition.Transition;
 import android.util.Log;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.SubMenu;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -51,7 +55,16 @@ import com.simplecity.amp_library.ui.modelviews.SubheaderView;
 import com.simplecity.amp_library.ui.recyclerview.ItemTouchHelperCallback;
 import com.simplecity.amp_library.ui.views.ContextualToolbar;
 import com.simplecity.amp_library.ui.views.ContextualToolbarHost;
-import com.simplecity.amp_library.utils.*;
+import com.simplecity.amp_library.utils.ActionBarUtils;
+import com.simplecity.amp_library.utils.ContextualToolbarHelper;
+import com.simplecity.amp_library.utils.Operators;
+import com.simplecity.amp_library.utils.PlaceholderProvider;
+import com.simplecity.amp_library.utils.PlaylistUtils;
+import com.simplecity.amp_library.utils.ResourceUtils;
+import com.simplecity.amp_library.utils.ShuttleUtils;
+import com.simplecity.amp_library.utils.SortManager;
+import com.simplecity.amp_library.utils.StringUtils;
+import com.simplecity.amp_library.utils.TypefaceManager;
 import com.simplecity.amp_library.utils.menu.album.AlbumMenuFragmentHelper;
 import com.simplecity.amp_library.utils.menu.playlist.PlaylistMenuFragmentHelper;
 import com.simplecity.amp_library.utils.menu.playlist.PlaylistMenuUtils;
@@ -64,11 +77,10 @@ import com.simplecityapps.recycler_adapter.recyclerview.RecyclerListener;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 import static com.afollestad.aesthetic.Rx.distinctToMainThread;
 
@@ -471,7 +483,9 @@ public class PlaylistDetailFragment extends BaseFragment implements
             SubMenu sub = contextualToolbar.getMenu().findItem(R.id.addToPlaylist).getSubMenu();
             disposables.add(PlaylistUtils.createUpdatingPlaylistMenu(sub).subscribe());
 
-            contextualToolbar.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(getContext(), mediaManager, Single.defer(() -> Operators.reduceSongSingles(contextualToolbarHelper.getItems())), songMenuFragmentHelper.getSongMenuCallbacks()));
+            contextualToolbar.setOnMenuItemClickListener(
+                    SongMenuUtils.getSongMenuClickListener(getContext(), mediaManager, Single.defer(() -> Operators.reduceSongSingles(contextualToolbarHelper.getItems())),
+                            songMenuFragmentHelper.getSongMenuCallbacks()));
 
             contextualToolbarHelper = new ContextualToolbarHelper<Single<List<Song>>>(contextualToolbar, new ContextualToolbarHelper.Callback() {
 
@@ -567,7 +581,6 @@ public class PlaylistDetailFragment extends BaseFragment implements
     protected String screenName() {
         return "PlaylistDetailFragment";
     }
-
 
     public SongView.ClickListener songClickListener = new SongView.ClickListener() {
         @Override

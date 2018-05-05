@@ -19,12 +19,16 @@ import com.simplecity.amp_library.model.FolderObject;
 import com.simplecity.amp_library.model.Song;
 import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.ui.modelviews.FolderView;
-import com.simplecity.amp_library.utils.*;
+import com.simplecity.amp_library.utils.CustomMediaScanner;
+import com.simplecity.amp_library.utils.DialogUtils;
+import com.simplecity.amp_library.utils.FileHelper;
+import com.simplecity.amp_library.utils.LogUtils;
+import com.simplecity.amp_library.utils.MusicUtils;
+import com.simplecity.amp_library.utils.PlaylistUtils;
 import com.simplecity.amp_library.utils.menu.MenuUtils;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
-
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
@@ -186,10 +190,10 @@ public class FolderMenuUtils {
                 case R.id.playNext:
                     callbacks.playNext(getSongsForFolderObject(folderObject));
                     return true;
-                case MusicUtils.Defs.NEW_PLAYLIST:
+                case MediaManager.NEW_PLAYLIST:
                     MenuUtils.newPlaylist(context, getSongsForFolderObject(folderObject), callbacks::onPlaylistItemsInserted);
                     return true;
-                case MusicUtils.Defs.PLAYLIST_SELECTED:
+                case MediaManager.PLAYLIST_SELECTED:
                     MenuUtils.addToPlaylist(context, menuItem, getSongsForFolderObject(folderObject), callbacks::onPlaylistItemsInserted);
                     return true;
                 case R.id.addToQueue:
@@ -224,11 +228,11 @@ public class FolderMenuUtils {
                     getSongForFile(fileObject).subscribe(song ->
                             MenuUtils.playNext(mediaManager, song, callbacks::showToast), errorHandler);
                     return true;
-                case MusicUtils.Defs.NEW_PLAYLIST:
+                case MediaManager.NEW_PLAYLIST:
                     getSongForFile(fileObject).subscribe(song ->
                             MenuUtils.newPlaylist(context, Collections.singletonList(song), callbacks::onPlaylistItemsInserted), errorHandler);
                     return true;
-                case MusicUtils.Defs.PLAYLIST_SELECTED:
+                case MediaManager.PLAYLIST_SELECTED:
                     getSongForFile(fileObject).subscribe(song ->
                             MenuUtils.addToPlaylist(context, menuItem, Collections.singletonList(song), callbacks::onPlaylistItemsInserted), errorHandler);
                     return true;

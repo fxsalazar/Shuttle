@@ -19,7 +19,11 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.transition.Transition;
 import android.transition.TransitionInflater;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
+import android.view.SubMenu;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -41,15 +45,31 @@ import com.simplecity.amp_library.model.Album;
 import com.simplecity.amp_library.model.ArtworkProvider;
 import com.simplecity.amp_library.model.Genre;
 import com.simplecity.amp_library.model.Song;
+import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.ui.detail.DetailSortHelper;
 import com.simplecity.amp_library.ui.detail.album.AlbumDetailFragment;
 import com.simplecity.amp_library.ui.drawer.DrawerLockManager;
 import com.simplecity.amp_library.ui.fragments.BaseFragment;
 import com.simplecity.amp_library.ui.fragments.TransitionListenerAdapter;
-import com.simplecity.amp_library.ui.modelviews.*;
+import com.simplecity.amp_library.ui.modelviews.AlbumView;
+import com.simplecity.amp_library.ui.modelviews.EmptyView;
+import com.simplecity.amp_library.ui.modelviews.HorizontalAlbumView;
+import com.simplecity.amp_library.ui.modelviews.HorizontalRecyclerView;
+import com.simplecity.amp_library.ui.modelviews.SelectableViewModel;
+import com.simplecity.amp_library.ui.modelviews.SongView;
+import com.simplecity.amp_library.ui.modelviews.SubheaderView;
 import com.simplecity.amp_library.ui.views.ContextualToolbar;
 import com.simplecity.amp_library.ui.views.ContextualToolbarHost;
-import com.simplecity.amp_library.utils.*;
+import com.simplecity.amp_library.utils.ActionBarUtils;
+import com.simplecity.amp_library.utils.ContextualToolbarHelper;
+import com.simplecity.amp_library.utils.Operators;
+import com.simplecity.amp_library.utils.PlaceholderProvider;
+import com.simplecity.amp_library.utils.PlaylistUtils;
+import com.simplecity.amp_library.utils.ResourceUtils;
+import com.simplecity.amp_library.utils.ShuttleUtils;
+import com.simplecity.amp_library.utils.SortManager;
+import com.simplecity.amp_library.utils.StringUtils;
+import com.simplecity.amp_library.utils.TypefaceManager;
 import com.simplecity.amp_library.utils.menu.album.AlbumMenuFragmentHelper;
 import com.simplecity.amp_library.utils.menu.album.AlbumMenuUtils;
 import com.simplecity.amp_library.utils.menu.song.SongMenuFragmentHelper;
@@ -61,11 +81,10 @@ import com.simplecityapps.recycler_adapter.recyclerview.RecyclerListener;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 import static com.afollestad.aesthetic.Rx.distinctToMainThread;
 
@@ -302,10 +321,10 @@ public class GenreDetailFragment extends BaseFragment implements
             case R.id.addToQueue:
                 presenter.addToQueue();
                 return true;
-            case MusicUtils.Defs.NEW_PLAYLIST:
+            case MediaManager.NEW_PLAYLIST:
                 presenter.newPlaylist();
                 return true;
-            case MusicUtils.Defs.PLAYLIST_SELECTED:
+            case MediaManager.PLAYLIST_SELECTED:
                 presenter.playlistSelected(getContext(), item, () -> presenter.closeContextualToolbar());
                 return true;
         }
@@ -483,7 +502,6 @@ public class GenreDetailFragment extends BaseFragment implements
         });
     }
 
-
     @Override
     public ContextualToolbar getContextualToolbar() {
         return contextualToolbar;
@@ -501,7 +519,13 @@ public class GenreDetailFragment extends BaseFragment implements
             SubMenu sub = contextualToolbar.getMenu().findItem(R.id.addToPlaylist).getSubMenu();
             disposables.add(PlaylistUtils.createUpdatingPlaylistMenu(sub).subscribe());
 
-            contextualToolbar.setOnMenuItemClickListener(SongMenuUtils.getSongMenuClickListener(getContext(), mediaManager, Single.defer(() -> Operators.reduceSongSingles(contextualToolbarHelper.getItems())), songMenuFragmentHelper.getSongMenuCallbacks()));
+            contextualToolbar.setOnMenuItemClickListener(
+                    SongMenuUtils.getSongMenuClickListener(
+                            getContext(),
+                            mediaManager,
+                            Single.defer(() -> Operators.reduceSongSingles(contextualToolbarHelper.getItems())),
+                            songMenuFragmentHelper.getSongMenuCallbacks())
+            );
 
             contextualToolbarHelper = new ContextualToolbarHelper<Single<List<Song>>>(contextualToolbar, new ContextualToolbarHelper.Callback() {
 
@@ -552,7 +576,6 @@ public class GenreDetailFragment extends BaseFragment implements
         return "GenreDetailFragment";
     }
 
-
     private SharedElementCallback enterSharedElementCallback = new SharedElementCallback() {
         @Override
         public void onSharedElementStart(List<String> sharedElementNames, List<View> sharedElements, List<View> sharedElementSnapshots) {
@@ -563,7 +586,6 @@ public class GenreDetailFragment extends BaseFragment implements
             }
         }
     };
-
 
     public SongView.ClickListener songClickListener = new SongView.ClickListener() {
         @Override
@@ -633,7 +655,6 @@ public class GenreDetailFragment extends BaseFragment implements
 
         getNavigationController().pushViewController(fragment, "DetailFragment", transitions);
     }
-
 
     // GenreDetailView implementation
 

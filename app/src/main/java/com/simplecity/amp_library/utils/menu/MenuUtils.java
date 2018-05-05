@@ -16,10 +16,9 @@ import com.simplecity.amp_library.utils.PlaylistUtils;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import kotlin.Unit;
-
 import java.util.Collections;
 import java.util.List;
+import kotlin.Unit;
 
 public class MenuUtils {
 
@@ -106,7 +105,7 @@ public class MenuUtils {
      * Todo: Remove context requirement
      * Add the passed in songs to a new playlist. The 'create playlist dialog' will be presented to the user.
      *
-     * @param single         the songs to be added to the playlist
+     * @param single the songs to be added to the playlist
      * @param insertCallback called when the songs are successfully added to the playlist
      */
     public static Disposable newPlaylist(Context context, Single<List<Song>> single, UnsafeAction insertCallback) {
@@ -122,8 +121,8 @@ public class MenuUtils {
      * <p>
      * Adds the passed in songs to the playlist. The playlist is included in the data of {@link MenuItem#getIntent()}
      *
-     * @param item           the menu item containing the intent which holds the Playlist
-     * @param single         the songs to be added to the playlist
+     * @param item the menu item containing the intent which holds the Playlist
+     * @param single the songs to be added to the playlist
      * @param insertCallback called once the items have been successfully inserted into the playlist
      */
     public static Disposable addToPlaylist(Context context, MenuItem item, Single<List<Song>> single, UnsafeAction insertCallback) {
@@ -141,7 +140,7 @@ public class MenuUtils {
      * Adds the passed in songs to the queue, then calls onComplete with a message to be displayed
      * in a toast.
      *
-     * @param single     the songs to be added to the queue.
+     * @param single the songs to be added to the queue.
      * @param onComplete the consumer to consume the toast message
      */
     public static Disposable addToQueue(MediaManager mediaManager, Single<List<Song>> single, @NonNull UnsafeConsumer<String> onComplete) {
