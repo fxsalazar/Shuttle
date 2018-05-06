@@ -1,4 +1,4 @@
-package com.simplecity.amp_library.playback.salazar.exo;
+package com.simplecity.amp_library.playback.salazar.carapace;
 
 import android.os.Looper;
 import android.support.annotation.Nullable;
@@ -13,15 +13,15 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
  * 03/02/2018.
  */
 
-public class ShuttlePlayer implements ShuttleExoPlayer {
+public class CarapacePlayer implements CarapaceExoPlayer {
 
     private SimpleExoPlayer simpleExoPlayer;
 
-    public static ShuttleExoPlayer createInstance(SimpleExoPlayer simpleExoPlayer) {
-        return new ShuttlePlayer(simpleExoPlayer);
+    public static CarapaceExoPlayer createInstance(SimpleExoPlayer simpleExoPlayer) {
+        return new CarapacePlayer(simpleExoPlayer);
     }
 
-    private ShuttlePlayer(SimpleExoPlayer simpleExoPlayer) {
+    private CarapacePlayer(SimpleExoPlayer simpleExoPlayer) {
         this.simpleExoPlayer = simpleExoPlayer;
     }
 

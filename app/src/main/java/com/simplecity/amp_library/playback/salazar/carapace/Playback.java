@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.simplecity.amp_library.playback.salazar.exo;
+package com.simplecity.amp_library.playback.salazar.carapace;
 
 import com.simplecity.amp_library.playback.salazar.MusicService;
 

@@ -1,4 +1,4 @@
-package com.simplecity.amp_library.playback.salazar.exo;
+package com.simplecity.amp_library.playback.salazar.carapace;
 
 import android.os.Bundle;
 import android.os.ResultReceiver;

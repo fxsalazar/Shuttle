@@ -2,13 +2,13 @@ package com.simplecity.amp_library.playback.salazar
 
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
-import com.simplecity.amp_library.playback.salazar.exo.Playback
+import com.simplecity.amp_library.playback.salazar.carapace.Playback
 
 /**
  * Created by fxsalazar
  * 05/05/2018.
  */
-class ExoMediaController(private val mediaControllerCompat: MediaControllerCompat?): Playback {
+class ExoMediaPlayback(private val mediaControllerCompat: MediaControllerCompat?): Playback {
     override fun start() {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -44,7 +44,6 @@ class ExoMediaController(private val mediaControllerCompat: MediaControllerCompa
     override fun play(item: MediaSessionCompat.QueueItem?) {
         mediaControllerCompat?.addQueueItem(item?.description)
         mediaControllerCompat?.transportControls?.play()
-
     }
 
     override fun play() {

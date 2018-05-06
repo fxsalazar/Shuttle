@@ -29,7 +29,7 @@ import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
-import com.simplecity.amp_library.playback.salazar.exo.PlayerManager;
+import com.simplecity.amp_library.playback.salazar.carapace.PlayerManager;
 import com.simplecity.amp_library.playback.salazar.utils.LogHelper;
 import com.simplecity.amp_library.ui.activities.ShortcutTrampolineActivity;
 

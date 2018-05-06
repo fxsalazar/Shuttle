@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.simplecity.amp_library.playback.salazar.exo;
+package com.simplecity.amp_library.playback.salazar.carapace;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

@@ -1,4 +1,4 @@
-package com.simplecity.amp_library.playback.salazar.exo;
+package com.simplecity.amp_library.playback.salazar.carapace;
 
 import android.support.v4.media.session.PlaybackStateCompat;
 

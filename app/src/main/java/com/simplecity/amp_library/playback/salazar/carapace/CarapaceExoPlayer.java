@@ -1,4 +1,4 @@
-package com.simplecity.amp_library.playback.salazar.exo;
+package com.simplecity.amp_library.playback.salazar.carapace;
 
 import com.google.android.exoplayer2.ExoPlayer;
 
@@ -7,7 +7,7 @@ import com.google.android.exoplayer2.ExoPlayer;
  * 03/02/2018.
  */
 
-public interface ShuttleExoPlayer extends ExoPlayer {
+public interface CarapaceExoPlayer extends ExoPlayer {
     void unDuckVolume();
 
     void duckVolume();

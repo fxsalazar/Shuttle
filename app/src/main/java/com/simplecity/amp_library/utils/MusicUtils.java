@@ -11,7 +11,7 @@ import com.simplecity.amp_library.model.Genre;
 import com.simplecity.amp_library.model.Song;
 import com.simplecity.amp_library.playback.MediaManager;
 import com.simplecity.amp_library.playback.QueueManager;
-import com.simplecity.amp_library.playback.salazar.exo.Playback;
+import com.simplecity.amp_library.playback.salazar.carapace.Playback;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import kotlin.Unit;

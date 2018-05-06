@@ -22,7 +22,7 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.text.TextUtils;
-import com.simplecity.amp_library.playback.salazar.exo.MusicProvider;
+import com.simplecity.amp_library.playback.salazar.carapace.MusicProvider;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.simplecity.amp_library.playback.salazar.exo;
+package com.simplecity.amp_library.playback.salazar.carapace;
 
 import android.content.Context;
 import android.media.AudioManager;
@@ -22,7 +22,7 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 public class PlayerManager {
     private static final String TAG = LogHelper.makeLogTag(PlayerManager.class);
     private final MediaSessionCompat mediaSession;
-    private ShuttleExoPlayer player;
+    private CarapaceExoPlayer player;
 
     private final AudioFocusManager.PlaybackCallback audioFocusManagerPlaybackCallback = new AudioFocusManager.PlaybackCallback() {
         @Override
@@ -61,7 +61,7 @@ public class PlayerManager {
         } catch (RemoteException e) {
             throw new IllegalStateException("Could not create a MediaNotificationManager", e);
         }
-        player = ShuttlePlayer.createInstance(ExoPlayerFactory.newSimpleInstance(service, new DefaultTrackSelector()));
+        player = CarapacePlayer.createInstance(ExoPlayerFactory.newSimpleInstance(service, new DefaultTrackSelector()));
         MediaSessionConnector mediaSessionConnector = new MediaSessionConnector(
                 mediaSession,
                 new DefaultAudioPlaybackController(
