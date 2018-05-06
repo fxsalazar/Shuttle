@@ -11,12 +11,17 @@ import com.simplecity.amp_library.rx.UnsafeConsumer;
 import com.simplecity.amp_library.utils.DataManager;
 import com.simplecity.amp_library.utils.LogUtils;
 import com.simplecity.amp_library.utils.SettingsManager;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.simplecity.amp_library.playback.QueueManager.EnqueueAction.LAST;
+import static com.simplecity.amp_library.playback.QueueManager.EnqueueAction.NEXT;
 import static com.simplecity.amp_library.playback.QueueManager.RepeatMode.ALL;
 import static com.simplecity.amp_library.playback.QueueManager.RepeatMode.ONE;
 import static com.simplecity.amp_library.playback.QueueManager.ShuffleMode.OFF;
@@ -26,12 +31,14 @@ public class QueueManager {
 
     private static final String TAG = "QueueManager";
 
+    @Retention(RetentionPolicy.SOURCE)
     @IntDef({OFF, ON})
     public @interface ShuffleMode {
         int OFF = 0;
         int ON = 1;
     }
 
+    @Retention(RetentionPolicy.SOURCE)
     @IntDef({QueueManager.RepeatMode.OFF, ONE, ALL})
     public @interface RepeatMode {
         int OFF = 0;
@@ -39,6 +46,8 @@ public class QueueManager {
         int ALL = 2;
     }
 
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({NEXT, LAST})
     public @interface EnqueueAction {
         int NEXT = 0;
         int LAST = 1;
@@ -288,7 +297,7 @@ public class QueueManager {
      */
     public void enqueue(final List<Song> songs, @EnqueueAction final int action, UnsafeAction setNextTrack, UnsafeAction openCurrentAndNext) {
         switch (action) {
-            case EnqueueAction.NEXT:
+            case NEXT:
                 List<Song> otherList = getCurrentPlaylist() == playlist ? shuffleList : playlist;
                 getCurrentPlaylist().addAll(queuePosition + 1, songs);
                 otherList.addAll(songs);
@@ -296,7 +305,7 @@ public class QueueManager {
                 setNextTrack.run();
                 notifyQueueChanged();
                 break;
-            case EnqueueAction.LAST:
+            case LAST:
                 playlist.addAll(songs);
                 shuffleList.addAll(songs);
                 notifyQueueChanged();

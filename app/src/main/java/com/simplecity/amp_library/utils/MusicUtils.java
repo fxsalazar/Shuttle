@@ -114,7 +114,7 @@ public class MusicUtils implements MediaManager {
         if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
             return MusicServiceConnectionUtils.serviceBinder.getService().getShuffleMode();
         }
-        return 0;
+        return QueueManager.ShuffleMode.OFF;
     }
 
     public void setShuffleMode(int mode) {
@@ -130,7 +130,7 @@ public class MusicUtils implements MediaManager {
         if (MusicServiceConnectionUtils.serviceBinder != null && MusicServiceConnectionUtils.serviceBinder.getService() != null) {
             return MusicServiceConnectionUtils.serviceBinder.getService().getRepeatMode();
         }
-        return 0;
+        return QueueManager.RepeatMode.OFF;
     }
 
     /**
