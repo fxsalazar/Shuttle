@@ -42,7 +42,7 @@ public final class ExoMediaLifecycleManager implements LifecycleObserver, MediaM
                 public void onConnected() {
                     try {
                         connectToSession(mediaBrowser.getSessionToken());
-                        mediaManager.setPlaybackManager(new ExoMediaPlayback(getMediaController()));
+                        mediaManager.setMediaControllerCompat(getMediaController());
                         mediaManagerCallback.onMediaManagerConnected();
                     } catch (RemoteException e) {
                         Log.e(TAG, "could not connect media controller", e);

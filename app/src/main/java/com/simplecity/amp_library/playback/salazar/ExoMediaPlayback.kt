@@ -86,7 +86,7 @@ class ExoMediaPlayback(private val mediaControllerCompat: MediaControllerCompat?
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun setCallback(callback: Playback.Callback?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun setCallback(callback: MediaControllerCompat.Callback) {
+        mediaControllerCompat?.registerCallback(callback)
     }
 }

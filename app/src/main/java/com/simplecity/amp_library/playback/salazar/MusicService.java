@@ -75,7 +75,6 @@ public class MusicService extends MediaBrowserServiceCompat {
         mediaSession = new MediaSessionCompat(this, MusicService.class.getSimpleName());
         mediaSession.setQueue(new ArrayList<>());
         setSessionToken(mediaSession.getSessionToken());
-
         playerManager = new PlayerManager(this, mediaSession);
 
         Context context = getApplicationContext();
@@ -98,7 +97,7 @@ public class MusicService extends MediaBrowserServiceCompat {
             if (ACTION_CMD.equals(action)) {
 //                if (CMD_PAUSE.equals(command)) {
 //
-//                    playbackManager.handlePauseRequest();
+//                    mediaControllerCompat.handlePauseRequest();
 //                } else
                 if (CMD_STOP_CASTING.equals(command)) {
 //                    CastContext.getSharedInstance(this).getSessionManager().endCurrentSession(true);
@@ -195,7 +194,7 @@ public class MusicService extends MediaBrowserServiceCompat {
             MusicService service = mWeakReference.get();
             if (service != null && service.mediaSession != null) {
                 service.mediaSession.getController().getTransportControls().stop();
-//                if (service.playbackManager.getPlayback().isPlaying()) {
+//                if (service.mediaControllerCompat.getPlayback().isPlaying()) {
 //                    Log.d(TAG, "Ignoring delayed stop since the media player is in use.");
 //                    return;
 //                }

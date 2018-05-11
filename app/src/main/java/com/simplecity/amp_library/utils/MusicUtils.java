@@ -373,7 +373,7 @@ public class MusicUtils implements MediaManager {
 
     @NotNull
     @Override
-    public Playback getPlaybackManager() {
+    public Playback getMediaControllerCompat() {
         return null;
     }
 

@@ -1,11 +1,11 @@
 package com.simplecity.amp_library.playback
 
 import android.net.Uri
+import android.support.v4.media.session.MediaControllerCompat
 import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
 import com.simplecity.amp_library.model.Genre
 import com.simplecity.amp_library.model.Song
-import com.simplecity.amp_library.playback.salazar.carapace.Playback
 import io.reactivex.Single
 
 interface MediaManager {
@@ -16,7 +16,10 @@ interface MediaManager {
         const val NEW_PLAYLIST = 2
     }
 
-    var playbackManager: Playback
+    var mediaControllerCompat: MediaControllerCompat
+
+    fun registerCallback(callback: MediaControllerCompat.Callback)
+    fun unregisterCallback(callback: MediaControllerCompat.Callback)
 
     /**
      * Sends a list of songs to the MusicService for playback

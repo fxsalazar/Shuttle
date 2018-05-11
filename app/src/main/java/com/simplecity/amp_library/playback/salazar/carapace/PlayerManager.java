@@ -8,12 +8,11 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
-
-import com.simplecity.amp_library.playback.salazar.utils.LogHelper;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.simplecity.amp_library.playback.salazar.utils.LogHelper;
 
 /**
  * Created by fxsalazar

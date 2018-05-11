@@ -21,11 +21,12 @@ import com.simplecity.amp_library.utils.ComparisonUtils;
 import com.simplecity.amp_library.utils.FileHelper;
 import com.simplecity.amp_library.utils.StringUtils;
 import io.reactivex.Single;
+import retrofit2.Call;
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.List;
-import retrofit2.Call;
 
 public class Song implements
         Serializable,
@@ -99,6 +100,10 @@ public class Song implements
                 .args(null)
                 .sort(MediaStore.Audio.Media.TRACK)
                 .build();
+    }
+
+    public Song(){
+
     }
 
     public Song(Cursor cursor) {

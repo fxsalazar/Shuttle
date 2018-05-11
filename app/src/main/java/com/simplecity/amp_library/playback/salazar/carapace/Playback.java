@@ -15,6 +15,8 @@
  */
 package com.simplecity.amp_library.playback.salazar.carapace;
 
+import android.support.annotation.NonNull;
+import android.support.v4.media.session.MediaControllerCompat;
 import com.simplecity.amp_library.playback.salazar.MusicService;
 
 import static android.support.v4.media.session.MediaSessionCompat.QueueItem;
@@ -34,7 +36,7 @@ public interface Playback {
     /**
      * Stop the playback. All resources can be de-allocated by implementations here.
      *
-     * @param notifyListeners if true and a callback has been set by setCallback,
+     * @param notifyListeners if true and a callback has been set by registerCallback,
      *                        callback.onPlaybackStatusChanged will be called after changing
      *                        the state.
      */
@@ -93,6 +95,7 @@ public interface Playback {
 
     void pauseAndDelayedStop();
 
+    // TODO replace with MediaControllerCompat.Callback. rethink methods.
     interface Callback {
         /**
          * On current music completed.
@@ -117,5 +120,5 @@ public interface Playback {
         void setCurrentMediaId(String mediaId);
     }
 
-    void setCallback(Callback callback);
+    void setCallback(@NonNull MediaControllerCompat.Callback callback);
 }

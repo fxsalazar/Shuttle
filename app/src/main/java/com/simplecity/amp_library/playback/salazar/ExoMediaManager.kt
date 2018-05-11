@@ -2,6 +2,7 @@ package com.simplecity.amp_library.playback.salazar
 
 import android.net.Uri
 import android.support.v4.media.MediaDescriptionCompat
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import com.simplecity.amp_library.model.Album
 import com.simplecity.amp_library.model.AlbumArtist
@@ -9,7 +10,6 @@ import com.simplecity.amp_library.model.Genre
 import com.simplecity.amp_library.model.Song
 import com.simplecity.amp_library.playback.MediaManager
 import com.simplecity.amp_library.playback.QueueManager
-import com.simplecity.amp_library.playback.salazar.carapace.Playback
 import io.reactivex.Single
 
 /**
@@ -17,14 +17,13 @@ import io.reactivex.Single
  * 05/05/2018.
  */
 class ExoMediaManager: MediaManager {
-    override lateinit var playbackManager: Playback
+    override lateinit var mediaControllerCompat: MediaControllerCompat
 
     override fun playAll(songsSingle: Single<MutableList<Song>>, onEmpty: (String) -> Unit) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun playAll(songs: MutableList<Song>, position: Int, canClearShuffle: Boolean, onEmpty: (String) -> Unit) {
-
         songs.first().apply {
             val desc = MediaDescriptionCompat.Builder()
                     .setMediaId(this.id.toString())
@@ -34,9 +33,16 @@ class ExoMediaManager: MediaManager {
                     .build()
 
             val item = MediaSessionCompat.QueueItem(desc,this.id)
-            playbackManager.play(item)
+            mediaControllerCompat.addQueueItem(item.description)
+            mediaControllerCompat.transportControls?.play()
         }
+    }
 
+    override fun unregisterCallback(callback: MediaControllerCompat.Callback) {
+        mediaControllerCompat.unregisterCallback(callback)
+    }
+    override fun registerCallback(callback: MediaControllerCompat.Callback) {
+        mediaControllerCompat.registerCallback(callback)
     }
 
     override fun shuffleAll(songsSingle: Single<List<Song>>, onEmpty: (String) -> Unit) {
@@ -148,7 +154,7 @@ class ExoMediaManager: MediaManager {
     }
 
     override fun getQueue(): MutableList<Song> {
-        return mutableListOf()
+        return mutableListOf(Song())
     }
 
     override fun getQueuePosition(): Int {

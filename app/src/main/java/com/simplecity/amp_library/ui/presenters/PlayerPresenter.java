@@ -5,6 +5,9 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
 import com.cantrowitz.rxbroadcast.RxBroadcast;
 import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.lyrics.LyricsDialog;
@@ -43,6 +46,27 @@ public class PlayerPresenter extends Presenter<PlayerView> {
     private Disposable isFavoriteDisposable;
     private MediaManager mediaManager;
     private final PlaybackMonitor playbackMonitor;
+    private MediaControllerCompat.Callback mediaManagerCallback = new MediaControllerCompat.Callback() {
+        @Override
+        public void onPlaybackStateChanged(PlaybackStateCompat state) {
+            super.onPlaybackStateChanged(state);
+        }
+
+        @Override
+        public void onMetadataChanged(MediaMetadataCompat metadata) {
+            super.onMetadataChanged(metadata);
+        }
+
+        @Override
+        public void onRepeatModeChanged(int repeatMode) {
+            super.onRepeatModeChanged(repeatMode);
+        }
+
+        @Override
+        public void onShuffleModeChanged(int shuffleMode) {
+            super.onShuffleModeChanged(shuffleMode);
+        }
+    };
 
     @Inject
     public PlayerPresenter(@Nullable MediaManager mediaManager) {
@@ -52,12 +76,16 @@ public class PlayerPresenter extends Presenter<PlayerView> {
 
     @Override
     public void unbindView(@NonNull PlayerView view) {
+        mediaManager.unregisterCallback(mediaManagerCallback);
         super.unbindView(view);
     }
 
     @Override
     public void bindView(@NonNull PlayerView view) {
         super.bindView(view);
+
+        mediaManager.registerCallback(mediaManagerCallback);
+
         updateTrackInfo();
         updateShuffleMode();
         updatePlaystate();
